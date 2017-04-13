@@ -1,0 +1,747 @@
+\chapter[Feedback Control of Many Differential-Drive Robots with Uniform Control Inputs]{Feedback~Control~of Many Differential-Drive Robots with Uniform~Control~Inputs}\label{chap:FeedbackControlDiffDrive}
+\begin{figure}[ht]
+\centering
+\begin{overpic}[width=\columnwidth]{sizeComparisonCOPYRIGHTFREE.pdf}\end{overpic}
+\caption{ \label{fig:SizeComparison} Three robotic systems with uniform inputs.  On the left, light-driven nanocars \cite{Chiang2011}.  In the middle, scratch-drive micro-robots \cite{Donald2008}.  On the right, six differential-drive robots commanded by a broadcast control signal.
+}
+\end{figure}
+
+In this chapter, we derive a globally asymptotically stabilizing feedback control policy for a collection of differential-drive robots under the constraint that every robot receives exactly the same control input. We begin by assuming that each robot has a slightly different wheel size, which scales each robot's forward speed and turning rate by a constant.  These constants may be found by offline or online calibration. The resulting feedback policy is easy to implement, is robust to standard models of noise, and scales to an arbitrary number (even a continuous ensemble) of robots. We validate this policy with hardware experiments, which additionally reveal that our feedback policy still works when the wheel sizes are unknown and even when the wheel sizes are all approximately identical. These results have possible future application to control of micro- and nano-scale robotic systems, which are often subject to similar constraints.  \blfootnote{Material from this chapter appeared in a preliminary conference version as \cite{Becker2012k}.}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}
+\label{sec:Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Next-generation micro-scale and nano-scale robotic systems have little-to-no onboard computation, and most are designed such that all robots in the system receive uniform control inputs. 
+Two robotic systems of this type are shown in Fig.~\ref{fig:SizeComparison}: light-driven nanocars and scratch-drive micro-robots.
+
+The light-driven nanocar \cite{Shirai2005,Chiang2011} is a synthesized molecule 1.7$\times$1.38 nm in size containing a uni-directional molecular motor, actuated by a certain wavelength of light.  Future work by Tour et al.\ aims to add controllable steering to this molecule.
+
+The scratch-drive micro-robot, from Donald and Paprotny et al.\ \cite{Donald2003,Donald2006,Donald2008}, is a device 60$\times$250 $\mu$m in size actuated by varying the electric potential across a substrate; multiple scratch-drive robots on the same substrate are controlled by this single uniform control input.  To independently control each micro-robot, their system is designed with unique species of robots such that individual species can be actuated while the others are immobilized or spin in place.
+
+The motion of both systems can be roughly approximated by a nonholonomic unicycle.
+A common question is therefore---how do we steer a collection of unicycles under the constraint that every one receives exactly the same control inputs?
+This question is the one we address here.
+
+
+
+We will investigate a collection of differential-drive robots under this same constraint---that every robot receives exactly the same control inputs.
+Nominally, a system of $n$ differential-drive robots  is not controllable. The path followed by each robot will be a rigid-body transformation of the path followed by every other robot.
+In practice, however, each robot is slightly different, and this inhomogeneity can be exploited in a systematic way in order to recover controllability.
+In particular, we will show that if each robot has a different wheel size, then we can derive a globally asymptotically stabilizing feedback control policy that steers the position of all robots (independently) between given start and goal configurations, despite the fact that they all receive the same control inputs.
+Similar inhomogeneities can be found in the systems of Fig.~\ref{fig:SizeComparison} (and in other micro/nano-scale robotic systems). For example, small imperfections in their scratch-drive actuators lead to speed variations between different scratch-drive micro-robots.  Donald et al.\ reported speed variations of $\pm40\%$ of the commanded speed.  This data is reprinted in Fig. \ref{fig:ScratchDrive}.
+%(in Fig.~11 of \cite{Donald2003}).
+
+ \begin{figure}
+\centering
+\includegraphics[width=0.5\textwidth]{ScratchDriveSide} 
+\begin{overpic}[width=0.45\textwidth]{ScratchDriveVelocityVariationZ}\end{overpic}
+\caption{\label{fig:ScratchDrive}
+  Left, a \emph{scratch-drive microrobot}, a microrobot with unicycle kinematics actuated by toggling the voltage levels of the substrate.  These robots can be commanded to move forward by duty cycling the substrate voltage.  Larger voltage pulses can snap the actuator arm (B) down, creating a pivot point for turning, while low pulses can return the arm to an up position.  Right, a plot showing speed variation for a set of scratch-drive robots.  This range of velocities could enable controllability of multiple robots using a common control signal. \\
+Figure reprinted, with permission, from Donald et al.~\cite{Donald2008}~\copyright~2008~IEEE.
+}
+\end{figure}
+
+Our approach is based on the application of ensemble control, which we used in Chapter \ref{chap-infUnicycle} to derive an approximate (open-loop) steering algorithm for a nonholonomic unicycle despite model perturbation (e.g., unknown wheel size) that scales both the forward speed and turning rate by an unknown but bounded constant \cite{Becker2012}. Rather than steer one unicycle with an unknown parameter, we chose to steer an infinite collection of unicycles, each with a particular value of this parameter in some bounded set. The idea was that if the same control inputs steered the entire ensemble from start to goal, then surely they would steer the particular unicycle of interest from start to goal, regardless of its wheel size.
+
+Here, we take advantage of this idea in a slightly different way. Rather than trying to mitigate the effects of bounded model perturbation (i.e., of inhomogeneity), we are trying to exaggerate these effects. Basic controllability results carry over from Chapter \ref{chap-infUnicycle}. The main contribution of this chapter is to derive a closed-loop feedback policy that guarantees exact asymptotic convergence of the ensemble to any given position. We note that, for single robots, it is possible to build a robust feedback controller that regulates position and orientation \cite{Lucibello2001}. It is not obvious that the same can be done for an infinite collection of robots.
+
+This chapter proceeds as follows.
+In Section \ref{sec:GlobalAsymptoticStability}, we provide a globally asymptotically stabilizing feedback control policy to control an ensemble of differential-drive robots. 
+We discuss implementation details in Section \ref{sec:Implementation}.
+We demonstrate the convergence of our policy under a standard noise model in simulation (Section \ref{sec:SimulationResults }) and in hardware experiments (Section \ref{sec:HardwareImplementationFeedbackDD}).  These experiments revealed surprising results:  \emph{(1)} our policy still works when the wheel sizes are incorrectly specified and \emph{(2)} our policy still works if all robots are approximately identical.
+%We conclude in Section \ref{sec:ConclusionFeedbackDD}.
+
+
+
+% This chapter describes a globally asymptotically stabilizing feedback control policy that enables position control of a collection of differential-drive robots, which all receive the same control signal.  Our policy is robust to standard models of noise, as we demonstrate in simulations involving thousands of robots and hardware experiments with four to six robots.  The method we present has potential applications in micro- and nano-robotic systems.
+%
+%In previous work, we presented an algorithm to approximately steer the position of a unicycle with an unknown, bounded model parameter that scales both the linear and angular velocity of the unicycle \cite{Becker2012}. Rather than steer one unicycle with an unknown parameter, we chose to steer a collection of unicycles containing every parameter value in the bounded set.  Following the terminology introduced by \cite{Brockett1999,Khaneja2000,Li2006,Li2006b,Li2006a,Li2007,Li2009,Li2011}, this fictitious collection of unicycles is called an {\em ensemble}, and control of such a collection using a single, uniform input for all robots is called {\em ensemble control}.
+%
+%In real systems, noise causes open-loop controllers to perform poorly.  Thus, this paper focuses on feedback control of systems with unicycle kinematics.  These include the three systems shown in Fig.~\ref{fig:SizeComparison}: light-driven nanocars, scratch-drive micro-robots, and radio-controlled differential-drive robots.
+%
+%The light-driven nanocar \cite{Shirai2005,Chiang2011} is a synthesized molecule 1.7$\times$1.38$n$m in size containing a uni-directional molecular motor, actuated by a certain wavelength of light.  Future work by Tour et al.\ aims to add controllable steering to this molecule.
+
+%\begin{figure}
+%\centering
+%\begin{overpic}[width=\columnwidth]{SizeComparison}\end{overpic}
+%\caption{ \label{fig:SizeComparison} Three robotic systems with uniform inputs.  On the left, light-driven nanocars \cite{Chiang2011}.  In the middle, scratch-drive micro-robots \cite{Donald2008}.  On the right, six differential-drive robots.
+%}
+%\end{figure}
+%
+%The scratch-drive micro-robot, from Donald and Paprotny et al.\ \cite{Donald2006,Donald2008} is a device 60$\times$250$\mu$m in size actuated by varying the electric potential across a substrate; multiple scratch-drive robots on the same substrate are controlled by this single uniform control input.  To independently control each micro-robot, the system is designed with unique robots such that individual robots can be actuated while the others are immobilized or spin in place.
+%
+%In contrast, ensemble control exploits the fact that physical inhomogeneities create heterogeneity in the state evolution.  For example, small imperfections in each scratch-drive micro-robot cause each robot to move and turn at slightly different rates.  We will show that this allows us to simultaneously actuate all the robots, yet steer each one toward a desired goal.  Our approach is related to recent work by Sitti et al.\ \cite{Floyd2011,Diller2012}.  They manipulate the 2D coordinates of multiple geometrically-dissimilar cuboid permanent magnets by exploiting heterogeneity in their dimensions; we exploit heterogeneity in the wheel sizes of our robots.
+%
+%With full state sensor information, for a single robot, it is easy to build a feedback controller that guarantees exact asymptotic convergence to any given position under the same type of model perturbation that we consider \cite[Chap. 11.6.2]{Siciliano2009}.  For single robots, it is just as easy to build a robust feedback controller that regulates orientation and position \cite{Lucibello2001}.  We would like to control an ensemble of many robots simultaneously; however, in \cite{Becker2012} we proved that it is impossible to control the individual orientation of each robot, so we are limited to only controlling the position of each robot in the ensemble.
+%
+%Inspired by previous work on feedback control and ensemble control, we \emph{1)} provide a globally asymptotically stabilizing feedback control policy to control an ensemble of differential-drive robots, \emph{2)} demonstrate its convergence under a standard noise model in simulation and hardware experiments, and \emph{3)} show that our policy still works when the parameter values are incorrectly specified or if all robots are identical.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Global Asymptotic Stabilization\\ of an Ensemble of Unicycles]{Global Asymptotic Stabilization of an Ensemble~of~Unicycles}
+\label{sec:GlobalAsymptoticStability}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+In this section, we provide a control policy that globally asymptotically stabilizes an infinite ensemble of unicycles.
+%  This policy is 
+%\begin{align}
+%u_1(t) &=-\int_{1-\pertRange}^{1+\pertRange} \bigg( x(\epsilon)\cos(\epsilon t)+y(\epsilon)\sin(\epsilon t)\bigg) d \epsilon. \nonumber \\
+%u_2(t) &= 1. 
+%\end{align}
+%where  $u_1$ and $u_2$ are linear and angular velocity commands.
+%This control policy assigns to $u_1(t)$ the negative gradient of the position error.
+This control policy sets the  linear velocity $u_1(t)$ to decrease the position error.
+ %Our control policy decreases the position error whenever it is possible to do so by controlling the linear velocity $u_1(t)$.  
+ There exist configurations at which no $u_1(t)$ can decrease the position error; however, we prove that at any such configuration, except the origin, the ensemble can always be rotated in place until there exists some $u_1(t)$ that will decrease the position error.
+
+Consider a single unicycle that rolls without slipping. We describe its configuration by $q=[x,y,\theta]^\top$ and its configuration space by $\Cspace = \R^2 \times \field{S}^1$. The control inputs are the forward speed $u_1\in\R$ and turning rate $u_2\in\R$.  The kinematics of the unicycle are given by
+\begin{equation}
+\label{eq:oneFeedbackDD}
+\dot{q}(t) =  u_1(t)\begin{bmatrix} \cos\theta\\ \sin\theta\\ 0 \end{bmatrix}  + u_2(t) \begin{bmatrix}  0\\ 0\\ 1 \end{bmatrix} .
+\end{equation}
+
+Given $q(0),\qgoal\in\Cspace$, the control problem for regulating position is to find inputs $u_1(t)$ and $u_2(t)$ such that for any $q(0)$ and $\qgoal$, \[\lim_{t \to \infty} \norm{\begin{bmatrix}q_1(t)\\q_2(t)\end{bmatrix}-\begin{bmatrix}\qgoal{_,1}(t)\\ \qgoal{_,2}(t)\end{bmatrix} }_2 = 0.\]
+
+If such inputs always exist, then we say that the system is {\em globally asymptotically stabilizable}. 
+
+We will solve this control problem under model perturbations which scale $u_1$ and $u_2$ by some unknown, bounded constant $\epsilon \in [1-\pertRange, 1+\pertRange]$ for some $0 \leq \pertRange < 1$.
+
+As in Chapter \ref{chap-infUnicycle}, our approach is to steer an uncountably infinite collection of unicycles parametrized by $\epsilon$, each one governed by
+\begin{equation}
+\label{eq:ensembleFeedbackDD}
+\dot{q}(t,\epsilon) = \epsilon \left( u_1(t)\begin{bmatrix} \cos\theta\\ \sin\theta\\ 0 \end{bmatrix} + u_2(t) \begin{bmatrix}  0\\ 0\\ 1 \end{bmatrix} \right).
+\end{equation}
+
+We choose $u_2(t) = 1$ so that
+\begin{align}
+\dot{x}(t,\epsilon)  &= \epsilon u_1(t) \cos(\epsilon t)\nonumber \\
+\dot{y}(t,\epsilon)  &= \epsilon u_1(t) \sin(\epsilon t). \label{eq:UnicycleEnsSystemPos}
+\end{align}
+
+
+\begin{theorem}
+\label{thm:ensembleunicyclesasymptoticallystabilizable}
+The ensemble \eqref{eq:UnicycleEnsSystemPos} with $0\le \pertRange<1$ is globally asymptotically stabilizable.
+\end{theorem}
+
+\begin{IEEEproof}
+We will prove the origin is globally asymptotically stabilizable by using a control-Lyapunov function \cite{Lyapunov1992}.  A suitable Lyapunov function is the mean squared distance of the ensemble from the origin:
+\begin{align}
+\label{eq:LyapunovContinuum}
+V(t,x,y) &= \int_{1-\pertRange}^{1+\pertRange} \frac{1}{2\epsilon}\left(x^2(t,\epsilon) +y^2(t,\epsilon) \right) d \epsilon\\
+\dot{V}(t,x,y) &= \int_{1-\pertRange}^{1+\pertRange} \frac{1}{\epsilon}\left( x(t,\epsilon) \dot{x}(t,\epsilon) +y(t,\epsilon) \dot{y}(t,\epsilon) \right) d \epsilon \nonumber \\
+&= u_1(t)  \int_{1-\pertRange}^{1+\pertRange}  \left( x(t,\epsilon) \cos(\epsilon t)+y(t,\epsilon) \sin(\epsilon t)\right) d \epsilon \nonumber \\
+&=  u_1(t)  F(t,x,y)\nonumber 
+\end{align}
+
+Here, $F(t,x,y)$ is the integral term which is finite as long as $x(t,\epsilon)$ and $y(t,\epsilon)$ are square integrable over $\epsilon$.  To ensure  $F(t,x,y)$ is square integrable we will require that the initial configurations  $x(0,\epsilon)$ and $y(0,\epsilon)$ be piecewise continuous.  We note here that $V(t,x,y)$ is positive definite and radially unbounded, and $V(t,x,y) \equiv 0$ only at $(x(t,\epsilon) ,y(t,\epsilon) ) = (0,0)$.
+
+\subsection{Designing a Control Policy}
+To make $\dot{V}(t,x,y)$ negative semi-definite, we choose
+\begin{align}
+u_1(t) &= -F(t,x,y)   \nonumber \\ 
+&=-\int_{1-\pertRange}^{1+\pertRange}  \left( x(t,\epsilon) \cos(\epsilon t)+y(t,\epsilon) \sin(\epsilon t)\right) d \epsilon. \label{eq:u1GAScontrolpolicy}
+\end{align}
+ For such a $u_1(t)$,
+\begin{align*}
+\dot{V}(t,x,y) &=  -\left(F(t,x,y)\right)^2.
+\end{align*}
+
+Note here that $\dot{V}(t,x,y) \le 0$, but there exists a subspace of $\left(x(t,\epsilon) ,y(t,\epsilon) \right)$ such that $\dot{V}(t,x,y) = 0$.  Because $\dot{V}(t,x,y)$ is negative semi-definite, we can only claim stability, not asymptotic stability.  To gain a proof of asymptotic stability, we will use an approach similar to that of Beauchard et al.\ \cite{Beauchard2010a} to extend LaSalle's invariance principle \cite{LaSalle1960} to this infinite-dimensional system.  We will proceed by showing the invariant set contains only the origin.
+
+\subsection{Finding the Invariant Set}
+Define the set $S$ as all configurations where no $u_1(t)$ exists that can decrease the Lyapunov function:
+\begin{align*}
+S &= \left\{x(t,\epsilon) ,y(t,\epsilon)  \middle| \dot{V}\left(t, x(t,\epsilon) , y(t,\epsilon)  \right) = 0\right\}\\
+&=  \left\{x(t,\epsilon) ,y(t,\epsilon)  \middle| -\left(F(t,x,y)\right)^2 = 0\right\}\\
+&=  \left\{x(t,\epsilon) ,y(t,\epsilon)  \middle| F(t,x,y) = 0\right\}.
+\end{align*}
+Define the time the ensemble enters $S$  as $t_0$, the orientation of each robot at $t_0$ as $\theta_0(\epsilon)$, and  $t' = t-t_0$.
+We then define all configurations that remain identically in $S$ as the invariant set $S_{inv}$.  Any configuration that enters this set will never modify its position because $u_1(t) = -F(t,x,y) =0$ for any configuration in $S_{inv}$. Therefore we can drop the time-dependence of $x(t,\epsilon)$ and $y(t,\epsilon)$:
+\begin{align*}
+S_{inv} &= \left\{x(\epsilon),y(\epsilon) \middle|  \int_{1-\pertRange}^{1+\pertRange}   \bigg( x(\epsilon)\cos(\epsilon t' + \theta_0(\epsilon)) \right.  \\
+&\left.+y(\epsilon)\sin(\epsilon t'+ \theta_0(\epsilon))\bigg) d \epsilon \equiv 0, \quad   \forall t' \ge 0\right\}.
+\end{align*}
+Because there is no time dependence, this property applies for all $t'$:
+\begin{align*}
+S_{inv} &= \left\{x(\epsilon),y(\epsilon) \middle|  \int_{1-\pertRange}^{1+\pertRange}   \bigg( x(\epsilon)\cos(\epsilon t' + \theta_0(\epsilon)) \right.  \\
+&\left.+y(\epsilon)\sin(\epsilon t'+ \theta_0(\epsilon))\bigg) d \epsilon \equiv 0, \quad   \forall t' \right\}.
+\end{align*}
+%We can remove $\theta_0(\epsilon)$ with the following change of coordinates using angle sum identities.  Let $\alpha = \epsilon t'$ and $\beta = \theta_0(\epsilon)$.  For brevity, let $c_\alpha = \cos(\alpha)$ and $s_\alpha = \sin(\alpha)$  Then
+%\begin{align*}
+% x(\epsilon)c_{\alpha + \beta} +y(\epsilon)s_{\alpha + \beta} &=x(\epsilon)(c_\alpha c_\beta - s_\alpha s_\beta) +y(\epsilon)(s_\alpha c_\beta+c_\alpha s_\beta )\\
+%  &=x(\epsilon)c_\alpha c_\beta -x(\epsilon)s_\alpha s_\beta +y(\epsilon)s_\alpha s_\beta+y(\epsilon)c_\alpha s_\beta\\ 
+%    &=\bigg(x(\epsilon) c_\beta +y(\epsilon) s_\beta\bigg) c_\alpha  +\bigg(-x(\epsilon)s_\beta+y(\epsilon)c_\beta\bigg)s_\alpha\\
+%    &=x^*(\epsilon)c_\alpha  +y^*(\epsilon)s_\alpha.
+%\end{align*}
+%Where
+We can remove $\theta_0(\epsilon)$ with the following change of coordinates
+\begin{align*}
+    \begin{bmatrix} x^*(\epsilon) \\ y^*(\epsilon)\end{bmatrix} 
+    &= \begin{bmatrix} \cos\big(\theta_0(\epsilon)\big) & \sin\big(\theta_0(\epsilon)\big)  \\
+    				  -\sin\big(\theta_0(\epsilon)\big)  &\cos\big(\theta_0(\epsilon)\big)
+      \end{bmatrix}
+      \begin{bmatrix}x(\epsilon)  \\y(\epsilon)    \end{bmatrix},
+%     x^*(\epsilon)&=x(\epsilon) \cos(\theta_0(\epsilon)) +y(\epsilon)  \sin(\theta_0(\epsilon))  \\
+%     y^*(\epsilon) &=-x(\epsilon) \sin(\theta_0(\epsilon)) +y(\epsilon) \cos(\theta_0(\epsilon)),
+\end{align*}
+giving the invariant set
+\begin{align*}
+S_{inv} &= \left\{x(\epsilon),y(\epsilon) \middle|  \int_{1-\pertRange}^{1+\pertRange}   \bigg( x^*(\epsilon)\cos(\epsilon t' ) +y^*(\epsilon)\sin(\epsilon t')\bigg) d \epsilon \equiv 0, \quad   \forall t' \right\}.
+\end{align*}
+We must show that no configuration except $(x(\epsilon),y(\epsilon)) \equiv (0,0)$ is in $S_{inv}$. 
+% These configurations  must be constant in $t$,  that is $\left[x_{t,\epsilon},y_{t,\epsilon}\right] = \left[x(\epsilon), y(\epsilon)\right]$, because $u_1(t)= -F(t)$ is only nonzero if $[x_{t,\epsilon},y_{t,\epsilon}] \notin S$.  The problem reduces to proving that only $[x(\epsilon),y(\epsilon)] = [0,0]$ satisfies 
+%\begin{align}
+%S_{inv} &= \left\{x(\epsilon),y(\epsilon) \middle| \vphantom{\int_{1-\pertRange}^{1+\pertRange}} \right.\nonumber \\
+%&\left. \int_{1-\pertRange}^{1+\pertRange}  \left( x(\epsilon)\cos(\epsilon t)+y(\epsilon)\sin(\epsilon t)\right) d \epsilon \equiv 0,\quad \forall t \right\}. \label{eq:SinvPosGama}
+%\end{align}
+%We apply the Fourier transform in $t$ to show that in the invariant set, $x(\epsilon) = y(\epsilon) = 0$.
+We do this by applying the Fourier transform in $t'$.
+\begin{align}
+\int_{1-\pertRange}^{1+\pertRange} \left( x^*(\epsilon)\cos(\epsilon t')+y^*(\epsilon)\sin(\epsilon t')\right) d \epsilon &\equiv 0,\quad &\forall t' \nonumber\\
+\mathcal{F}\left[\int_{1-\pertRange}^{1+\pertRange}   \left( x^*(\epsilon)\cos(\epsilon t')+y^*(\epsilon)\sin(\epsilon t')\right) d \epsilon \right]\{\omega\} &\equiv \mathcal{F}\left[0\right]\{\omega\} ,\quad &\forall \omega \nonumber\\
+\mathcal{F}\left[\int_{1-\pertRange}^{1+\pertRange}   \left( x^*(\epsilon)\cos(\epsilon t')+y^*(\epsilon)\sin(\epsilon t')\right) d \epsilon \right]\{\omega\} &\equiv 0,\quad &\forall \omega \label{eq:FourierTransformOnInv}
+\end{align}
+By linearity of the Fourier transformation  \eqref{eq:FourierTransformOnInv} is
+\begin{align}
+\int_{1-\pertRange}^{1+\pertRange} \bigg(   
+\mathcal{F}\left[x^*(\epsilon)\cos(\epsilon t') \right]\{\omega\}+ 
+\mathcal{F}\left[y^*(\epsilon)\sin(\epsilon t') \right]\{\omega\} 
+\bigg) d \epsilon \nonumber \equiv 0,\quad \forall \omega \nonumber
+\end{align}
+We then apply the Fourier transform of $\sin(\cdot)$ and $\cos(\cdot)$ as follows.
+\begin{align}
+\int_{1-\pertRange}^{1+\pertRange}\sqrt{\frac{\pi}{2}} \bigg(   
+&x^*(\epsilon)\left(\ddelta(-\epsilon + \omega)+ \ddelta(\epsilon + \omega) \right) \nonumber \\
++&\ii y^*(\epsilon)\left(\ddelta(-\epsilon + \omega)- \ddelta(\epsilon + \omega) \right)
+\bigg) d \epsilon  \equiv 0,\quad \forall \omega, \label{eq:IntegralOfFourierTransformIsZero}
+\end{align}
+%For any $\omega = \epsilon$, this reduces to
+%\begin{align*}
+%\sqrt{\frac{\pi}{2}} 
+%x^*(\epsilon)+\ii y^*(\epsilon) \equiv 0.
+%\end{align*}
+where $\ddelta(\cdot)$ is the Dirac-delta operator.   The Dirac-delta operator is non-zero only when $\epsilon = \pm\omega$.  
+Because $\epsilon \in [1-\delta,1+\delta]$ and $0\le\delta <1$, we can integrate \eqref{eq:IntegralOfFourierTransformIsZero} for all $\omega \in  [1-\delta,1+\delta]$ to show that in the invariant set
+\begin{align}
+x^*(\omega) +\ii y^*(\omega) \equiv 0,\quad \forall \omega \in  [1-\delta,1+\delta]. \label{eq:constraintOnInvariantSet}
+\end{align}
+Because  $x^*$ and $y^*$ are both real-valued,  \eqref{eq:constraintOnInvariantSet} reduces to
+\begin{align}
+x(\epsilon) \equiv 0, y(\epsilon) \equiv 0,  \quad \forall \epsilon \in  [1-\delta,1+\delta]. \nonumber
+\end{align}
+
+
+We have shown that $V$ is positive-definite and radially unbounded, $\dot{V}$ is negative semi-definite, and the only invariant point where $\dot{V} = 0$ is the origin.  Therefore, we conclude the origin of the system \eqref{eq:UnicycleEnsSystemPos} is globally asymptotically stable under the control policy
+\begin{align}
+u_1(t) &=-\int_{1-\pertRange}^{1+\pertRange}  \left( x(\epsilon) \cos(\epsilon t)+y(\epsilon) \sin(\epsilon t)\right) d \epsilon \nonumber\\
+u_2(t) &= 1. \label{eq:GAScontrolpolicy}
+\end{align}\end{IEEEproof}
+
+
+%Note that we assumed the ensemble has zero phase when it enters the set $S$.   In general this is not the case, and we define the initial orientation of each robot when it enters $S$ as $\theta_0(\epsilon)$ and reset $t$ to 0.
+%We then define all configurations that remain identically in $S$ as the invariant set $S_{inv}$:
+%\begin{align*}
+%S_{inv} &= \left\{x(\epsilon),y(\epsilon) \middle|  \int_{1-\pertRange}^{1+\pertRange}   \bigg( x(\epsilon)\cos(\epsilon t + \theta_0(\epsilon)) \right.  \\
+%&\left.+y(\epsilon)\sin(\epsilon t+ \theta_0(\epsilon))\bigg) d \epsilon \equiv 0, \quad   \forall t \ge 0\right\}.
+%\end{align*}
+%We can remove $\theta_0(\epsilon)$ by the following transform
+%\begin{align*}
+%c(\epsilon) &= \sqrt{x(\epsilon)^2 + y(\epsilon)^2}\\
+%\alpha(\epsilon) &= \operatorname{atan2}\left(y(\epsilon),x(\epsilon)\right)\\
+%x^*(\epsilon) &= c(\epsilon)\cos\left(\alpha(\epsilon)\right)\\
+%y^*(\epsilon) &= c(\epsilon)\sin\left(\alpha(\epsilon)\right)
+%\end{align*}
+
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Implementation}
+\label{sec:Implementation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this section, we explain extensions of our control policy to unidirectional inputs and to discrete-time, finite ensembles, and describe a standard noise model.  These extensions are useful for implementing our policy.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Extension to Unidirectional Vehicles}
+\label{sec:ExtNonNegative}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Our proof of GAS stability uses a control policy with positive angular velocity commands but positive and negative linear velocity commands.  The nano- and micro-robots we are using for inspiration \cite{Shirai2005,Chiang2011,Donald2003,Donald2006,Donald2008} cannot produce negative linear velocities.  To extend the control law to robots that cannot move backwards, we modify it as follows:
+\begin{align}
+u_1(t) &=\operatorname{max}\left(0, -\int_{1-\pertRange}^{1+\pertRange} \bigg( x_{t,\epsilon}\cos(\epsilon t)+y_{t,\epsilon}\sin(\epsilon t)\bigg) d \epsilon \right). \nonumber\\
+u_2(t) &= 1. \label{eq:UnidirectionalControlPolicy}   
+\end{align}
+
+In this case, the invariant set is
+\begin{align}
+S_{inv} &= \left\{x(\epsilon),y(\epsilon) \middle| F(t,x,y) \le 0, \quad   \forall t' \ge 0\right\} \label{eq:AllPosInvariantSet}\\
+ &= \left\{x(\epsilon),y(\epsilon) \middle|  \int_{1-\pertRange}^{1+\pertRange}   \bigg( x^*(\epsilon)\cos(\epsilon t') +y^*(\epsilon)\sin(\epsilon t')\bigg) d \epsilon \ge 0, \quad   \forall t' \ge 0\right\}.\nonumber
+\end{align}
+
+We have already shown that the only solution identically equal to zero for all $t'\ge0$ is $x(\epsilon)=y(\epsilon)=0$.  However, $S_{inv}$ now allows negative $F(t,x,y)$ values and our proof of Theorem \ref{thm:ensembleunicyclesasymptoticallystabilizable} does not apply.
+%%%%%%Note that $F(t)$ is the integral over a continuum of sinusoids with positive frequencies.  Because none of the component sinusoids have a zero-frequency component, the integral does not either.  
+%%%%%%\begin{theorem}
+%%%%%%\label{thm:unidirectionalensembleunicyclesasymptoticallystabilizable}
+%%%%%%The invariant set \ref{eq:AllPosInvariantSet} under control law \ref{eq:UnidirectionalControlPolicy}  only contains the origin.
+%%%%%%\end{theorem} 
+%%%%%%\proof
+%%%%%%We prove by contradiction.  Assume that in the invariant set there exists $t_0$ such that $F(t_0) > 0$.  Then there also exists some $t_1\ge0$ such that $F(t_1) < 0$, but if such a $t_1$ exists, we could apply our control law to decrease the Lyapunov function and escape to a smaller invariant set. 
+%%%%%%Therefore the only solution identically equal to zero for all $t'\ge0$ is $x(\epsilon)=y(\epsilon)=0$.  
+%%%%%%\endproof
+
+%   TODO:  show plots showing covergence rates for non negative inputs.
+%   TODO:  fix proofs for finite ensembles using uniform n-step convergence.  Also show that this results in exponential stability since this is a linear (time varying) system   \cite{Kwon1978} gives asymptotic controllability for a discrete time uniformly controllable linear time-varying system. \cite{Hill2011} gives conditions for exponential stability:  the frozen A must be exponentially stable  (almost always true for us)
+
+%Some systems, including the nanocar and scratch-drive micro-robot, have unidirectional constraints on their inputs.  To handle linear velocity constraints, we modify \eqref{eq:GAScontrolpolicy} to be non-negative by setting $u_1(t) = \max(0,-F(t))$.  
+Empirically in both simulation and hardware experiments, the control policy \ref{eq:UnidirectionalControlPolicy} is still asymptotically stable.  In our experiments the Lyapunov function error under the unidirectional control policy is a constant factor greater than the error under the bidirectional control policy. \\  
+
+
+We note briefly that scratch-drive robots cannot turn in place, but instead pivot around the tip of their steering arm. Because our control policy requires only non-negative turns, it can be extended to vehicles with a minimum turning radius by the following transformation.  Given a minimum turning radius $r_{min},$ define the new robot center to be the center of rotation.  This is a translation $(-r_{min},0)$ in the robot reference frame, as shown in Fig.~\ref{fig:scratchDriveATBturninplace}.
+
+\begin{figure}
+\centering
+\begin{overpic}[width=0.7\columnwidth]{scratchDriveATBturninplaceCar}\put(10,-3){$r_{min}$}\put(75,-3){$r_{min}$}\end{overpic}
+\vspace{2em}
+\caption{\label{fig:scratchDriveATBturninplace} Because our control policy requires only non-negative turns, it can be extended to vehicles with a minimum turning radius (e.g. scratch-drive robots and automobiles) by defining the robot center to be the center of rotation.
+}
+\end{figure}
+% This class of systems are called Dubins' cars, a kinematic unicycle with a minimum turning radius that cannot reverse, first described in \cite{Dubins1957,Balluchi1996}.  %,Murray1994,LaValle2006,Choset2005}.
+
+%Unidirectional inputs show asymptotic convergence in both simulation and experiment.  Extending the global asymptotic stability result to unidirectional inputs is a promising avenue for future work.
+
+\subsection{Extension to a Finite Ensemble of Robots}
+Thus far we have worked in continuous time for an ensemble of robots.  Many real-life applications, including the micro- and nano-robots we discussed above, involve a finite number of robots which are controlled and measured in discrete time.  We call an ensemble with a finite number of robots a {\em finite ensemble}.
+
+To model a finite ensemble of $n$ robots, we redefine the system kinematic model from \eqref{eq:UnicycleEnsSystemPos} as
+\begin{align}
+\dot{x}_{i}  &= \epsilon_i u_1(t) \cos(\theta_i(t))\nonumber \\
+\dot{y}_{i}  &= \epsilon_i u_1(t) \sin(\theta_i(t))\nonumber \\
+\dot{\theta}_{i} &=\epsilon_i  u_2(t) ,
+\label{eq:FiniteDynamics}
+\end{align}
+and in the control policy \eqref{eq:GAScontrolpolicy}, we replace the integration over $\epsilon$  with a finite sum from 1 to $n$:
+\begin{align}
+u_1(t) &= -\frac{1}{n} \sum_{i=1}^{n}  \left( x_{i}\cos(\theta_i(t))+y_{i}\sin(\theta_i(t))\right) \nonumber \\
+u_2(t) &= 1, \label{eq:FiniteControlPolicy}
+\end{align}
+where for the $i$th robot, $\epsilon_i$ is the variable parameter, $(x_{i},y_{i})$ is the position at time $t$, and $\epsilon_i t$ is the orientation at time $t$. 
+\begin{theorem}
+The finite ensemble \ref{eq:FiniteDynamics} under control law \ref{eq:FiniteControlPolicy} is globally asymptotically stable.
+\end{theorem}
+\begin{IEEEproof}
+ A suitable Lyapunov function is the mean squared distance of the finite ensemble from the origin:
+\begin{align}
+\label{eq:LyapunovFinite}
+V(t,x,y) &= \frac{1}{n} \sum_{i=1}^{n}  \frac{1}{2\epsilon_i}\left(x_i^2+y_i^2\right) \\
+\dot{V}(t,x,y) &= \frac{1}{n} \sum_{i=1}^{n}  \frac{1}{\epsilon_i}\left( x_i\dot{x}_i +y\dot{y}_i\right)\nonumber \\
+&= u_1(t)  \frac{1}{n} \sum_{i=1}^{n}  \bigg( x_i\cos\big(\epsilon_i t + \theta_i(0)\big)+y_i \sin\big(\epsilon_i t + \theta_i(0)\big)\bigg)  \nonumber \\
+&=  u_1(t)  F(t)\nonumber 
+\end{align}
+
+
+
+The invariant set is now
+\begin{align*}
+S_{inv} &= \left\{\mathbf{x},\mathbf{y}\middle| \frac{1}{n} \sum_{i=1}^{n}  \left( x^*_{i}\cos(\epsilon_i t')+y^*_{i}\sin(\epsilon_i t')\right) \equiv 0, \quad   \forall t' \ge 0\right\}.
+\end{align*}
+As in \ref{sec:GlobalAsymptoticStability}, we then apply the Fourier transform as follows.
+\begin{align}
+\frac{1}{n} \sum_{i=1}^{n} \sqrt{\frac{\pi}{2}} \bigg(   
+&x^*_i\left(\ddelta(-\epsilon_i + \omega)+ \ddelta(\epsilon_i + \omega) \right) \nonumber \\
++&\ii y^*_i\left(\ddelta(-\epsilon_i + \omega)- \ddelta(\epsilon_i + \omega) \right)
+\bigg)  \equiv 0,\quad \forall \omega. \label{eq:IntegralOfFourierTransformIsZeroFinite}
+\end{align}
+Again $x^*_i$ and $y^*_i$ are real-valued.  By setting $\omega = \epsilon_i$ for $i\in [1,n]$ we can show that in the invariant set  \[(x_{i},y_{i}) = (0,0) \quad \forall i \in [1,n],\]   and therefore the finite ensemble is globally asymptotically stabilizable with control policy \eqref{eq:FiniteControlPolicy}.
+\end{IEEEproof}
+\subsection{Extension to Discrete-Time}
+
+To  simplify implementation  of \eqref{eq:FiniteControlPolicy} on a robotic testbed with actuation and sensing at discrete times, 
+we split each $\Delta T$ time step into two stages with piecewise constant inputs.  During the first stage we command the robots to turn in place, and during the second stage we apply a linear velocity.
+\begin{align}\label{eq:DiscreteFiniteControlPolicy}
+F(k) &= \frac{1}{n} \sum_{i = 1}^{n} \left( x_{i}(k)\cos(\theta_{i}(k))+y_{i}(k)\sin(\theta_{i}(k))\right)\nonumber \\
+k &= \frac{t}{\Delta T} - \textrm{mod}\left(t , \Delta T \right) \nonumber\\
+\bigg[u_1(t),u_2(t)\bigg] &=
+\begin{cases}  
+     \frac{2}{\Delta T}\left[-F(k), 0\right]         &t-k\Delta T< \frac{\Delta T}{2}\\
+     \frac{2}{\Delta T}\left[0, \quad\phi \right] &\text{else}
+\end{cases}
+\end{align}
+
+
+
+%To model a finite ensemble in discrete time  under control policy \eqref{eq:DiscreteFiniteControlPolicy}, we convert the continuous kinematics in \eqref{eq:FiniteDynamics} to the discrete kinematics:
+%\begin{align}
+%\begin{bmatrix} x_{i}(k+1) \\ y_{i}(k+1) \\ \theta_{i}(k+1)  \end{bmatrix} &= \begin{bmatrix} x_{i}(k) \\ y_{i}(k) \\ \theta_{i}(k)  \end{bmatrix} + \begin{bmatrix} \epsilon_i\cos(\theta_{i}(k) ) & 0\\ \epsilon_i\sin(\theta_{i}(k) )  & 0\\ 0 & \epsilon_i \end{bmatrix} \begin{bmatrix} u_1(k)\\ u_2(k)  \end{bmatrix}, \label{eq:DiscreteFiniteDynamics}
+%\end{align}
+% 
+
+We can then write the kinematics as
+\begin{align}
+\begin{bmatrix} x_{i}(k+1) \\ y_{i}(k+1)  \end{bmatrix} &= \begin{bmatrix} x_{i}(k) \\ y_{i}(k)   \end{bmatrix} + \begin{bmatrix} \epsilon_i\cos(\theta_{i}(0) + \epsilon_i k \phi) \\ \epsilon_i\sin(\theta_{i}(0) + \epsilon_i k \phi) \\ \end{bmatrix}  u_1(k), \label{eq:DiscreteFiniteDynamicsPos}
+\end{align}
+for $i = 1,2,\ldots,n$ and $k \in \field{Z}$. 
+Eq. \eqref{eq:DiscreteFiniteDynamicsPos} is a discrete-time linear time-varying system. Obviously, as $\phi\rightarrow 0$, the discrete-time ensemble \eqref{eq:DiscreteFiniteDynamicsPos} approaches the continuous-time model \eqref{eq:FiniteDynamics}.  To prove  \eqref{eq:DiscreteFiniteControlPolicy} stabilizes \eqref{eq:DiscreteFiniteDynamicsPos}, we show the system is uniformly $k$-step controllable, as in \cite[chap 25.3]{TheControlHandbook1996}.
+
+ We write \eqref{eq:DiscreteFiniteDynamicsPos} in standard notation as
+   \begin{align}
+q_i(k+1) &=  A_i(k) q_i(k) + B_i(k)  u_1(k).
+\end{align}
+Here $A_i(k) $ is the identity matrix for all $i,k$. We can  calculate $B_i(k)$ as
+
+   \begin{align*}
+B_i(0)  &=   \begin{bmatrix}  \cos(\theta_i(0)) \\  \sin(\theta_i(0)) \end{bmatrix}\\
+B_i(1)  &=   \begin{bmatrix}  \cos(\theta_i(0)  + \epsilon_i  \phi) \\  \sin(\theta_i(0) + \epsilon_i  \phi)  \end{bmatrix}\\
+& \vdots\\
+B_i(k)  &=   \begin{bmatrix}  \cos\left(\theta_i(0) +  \epsilon_i k \phi\right) \\  \sin\left(\theta_i(0) +  \epsilon_i k \phi\right)  \end{bmatrix}\\
+ \mathbf{B}(k) &= \begin{bmatrix}B_1(k)\\B_2(k)\\ \vdots \\B_n(k)\end{bmatrix}
+\end{align*}
+We define the controllability matrix $\mathcal{C}_k$ as
+  \[
+   \mathcal{C}_k = \left[ \mathbf{B}_0, \mathbf{B}_1\ldots \mathbf{B}_{k-1} \right].
+   \]
+   The finite ensemble with $n$ robots has $2n$ degrees of freedom.  To control each robot's $x,y$ position requires $\mathcal{C}$ to be rank $2n$.  This matrix is almost always full rank provided that $k \gg 2n$ and a suitable choice of $\phi$.  In our simulations and hardware experiments we use $\phi = \frac{\pi}{2}$.  If  $\mathcal{C}_k$ is full rank, then for any starting state $\mathbf{q}_0$ and desired final state $\mathbf{q}_1$, the control sequence is derived by solving  in the least squares sense  the overdetermined system of equations 
+\begin{equation}\label{eq:uniformNstepControlLaw}
+\mathcal{C}_k\mathbf{u}_{[0,\ldots,k-1]} = (\mathbf{q}_1-\mathbf{q}_0).
+\end{equation}
+%  This sequence of inputs steers the ensemble exactly from $\mathbf{q}_0$ to $\mathbf{q}_1$, provided $\mathcal{C}$ is full rank.
+   We note that for $k = 2n$, $\mathcal{C}$  is almost always ill-conditioned, leading to very large control commands and poor convergence.  Better results are obtained for $k = 5n$, as shown in Fig.~\ref{fig:uniformNStep}, with control effort 15 orders of magnitude less than that for $k=2n$ and exact convergence to the goal.
+     \begin{figure}
+\centering
+\frame{\begin{overpic}[width=0.8\columnwidth]{uniformNStep2x}\end{overpic}}\\
+\vspace{1em}
+\frame{\begin{overpic}[width=0.8\columnwidth]{uniformNStep5x}\end{overpic}}
+\caption{\label{fig:uniformNStep} 
+Error and control effort of a discrete-time finite ensemble of $n=120$ robots under control \eqref{eq:uniformNstepControlLaw}. At top are results for $k = 2n$.  The controllability matrix  $\mathcal{C}_k$ is ill conditioned, leading to poor convergence and large control efforts.  The bottom plot shows $k = 5n$, leading to control effort 15 orders of magnitude less and convergence to the goal. The initial error for each simulation is 100, but with $k=2n$ the final error is 58, while the final error for $k=5n$ is zero.
+}
+\end{figure}
+   
+ 
+   
+   
+ %  We will show that it is uniformly $n$-step controllable using the methods of  \cite[chap 25.3]{TheControlHandbook1996}.  Recall that controllability in a discrete-time linear time-varying system is equivalent to reachability.
+%Methods in \cite[chap 25.3]{TheControlHandbook1996} can be used to show that  \eqref{eq:DiscreteFiniteDynamics} is stabilizable.
+%   TODO:  fix proofs for finite ensembles using uniform n-step convergence.  Also show that this results in exponential stability since this is a linear (time varying) system   \cite{Kwon1978} gives asymptotic controllability for a discrete time uniformly controllable linear time-varying system. \cite{Hill2011} gives conditions for exponential stability:  the frozen A must be exponentially stable  (almost always true for us)
+
+The control policy \eqref{eq:DiscreteFiniteControlPolicy} is easy to implement, never increases the summed distance of the ensemble from the goal, and is robust to standard models of noise.
+
+\subsection{Applying a Standard Noise Model}
+To model noise in our simulations we apply the noise model in \cite[Chap. 5.4.2]{Thrun2005} by Thrun et al.  This model defines each discrete-time motion as a rotation, a translation, and a second rotation, each perturbed by Gaussian noise.  It uses the four parameters $\alpha_1,\alpha_2,\alpha_3$, and $\alpha_4$ to weight the correlation of noise between rotation and translation commands.  If the desired rotation, translation, and second rotation are given by $[\delta_{\text{rot1}}, \delta_{\text{trans}},\delta_{\text{rot2}}]$, then we can sample a realistic motion by the sequence $[\hat{\delta}_{\text{rot1}}, \hat{\delta}_{\text{trans}},\hat{\delta}_{\text{rot2}}]$ as follows 
+\begin{align}
+\label{eq:NoiseModel}
+\hat{\delta}_{\text{rot1}} &= \delta_{\text{rot1}} - \text{sample}(\alpha_1{\delta}_{\text{rot1}}^2 + \alpha_2{\delta}_{\text{trans}}^2)\nonumber\\
+\hat{\delta}_{\text{trans}} &= \delta_{\text{trans}} - \text{sample}(\alpha_3{\delta}_{\text{trans}}^2 + \alpha_4{\delta}_{\text{rot1}}^2 + \alpha_4{\delta}_{\text{rot2}}^2)\nonumber\\
+\hat{\delta}_{\text{rot2}} &= \delta_{\text{rot2}} - \text{sample}(\alpha_1{\delta}_{\text{rot2}}^2 + \alpha_2{\delta}_{\text{trans}}^2),
+\end{align}
+where $\text{sample}(x)$ generates a random sample from the zero-centered normal distribution with variance $x$.  We use this noise model for all discrete-time simulations with a finite number of robots.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Simulation Results }
+\label{sec:SimulationResults }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Here, we present our simulation methodology and results for both continuous- and discrete-time simulations.
+
+\subsection{Continuous Time Simulation}
+We implemented the finite ensemble \eqref{eq:FiniteDynamics} with control policy \eqref{eq:FiniteControlPolicy} in {\sc{Matlab}} to simulate $n=\{1000,2000\}$ robots in continuous time for two different test cases.  For these tests $\pertRange = 1/2$, and $\epsilon_i = 1-\pertRange + \frac{2\pertRange}{n}i$.  We also compared bidirectional policy with a unidirectional policy. In these simulations $u_2(t) = \cos(\sqrt{t})$ because the finite ensemble poorly approximates the continuum for large $t$ when $u_2(t) = 1$. 
+%Using a $u_2(t) = 1$  
+\begin{description}
+\item[Point to Point:]
+Robots are initialized to $(x_i,y_i,\theta_i) = (1,1,0)$ and steered to the origin.  Results are shown in Fig.~\ref{fig:PtLyap1000uni}.
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{PtLyapunov2000uniLyapunovFunc}\end{overpic}\\
+\vspace{2em}
+\begin{overpic}[width=\columnwidth]{PtLyap1000uniStateXYplot}\end{overpic}
+\caption{\label{fig:PtLyap1000uni} Continuous time simulation of $n$ robots, with $\epsilon \in [0.5,1.5]$, all initialized to $(1,1)$ and steered to $(0,0)$ using control policy \eqref{eq:FiniteControlPolicy}.  The simulation was run with $n = \{1000,2000\}$.  Each trial achieved the same error, as shown in the top plot. State trajectories of the system are shown in the bottom plot.  Lines show the path followed for five particular values of $\epsilon$.  Thick black lines show the entire ensemble at instants of time.
+}
+\end{figure}
+
+\item[Path to Point:]
+Robots are initialized to \[\theta_i = 2\pi i / n, \quad \begin{bmatrix}x_i\\y_i\end{bmatrix} = \begin{bmatrix}\cos(\theta_i)\\\sin(\theta_i)\end{bmatrix},\] a circle of radius $1$, and steered to the origin. Results are shown in Fig.~\ref{fig:CircLyap1000uni}.
+
+In each simulation, under our control policy the error converges asymptotically to zero. Additionally, the system errors and trajectories for $n=1000$ and $2000$ are identical, suggesting that this level of discretization accurately represents the ensemble ($n=\infty$) kinematics.  Results are shown in Fig.~\ref{fig:CircLyap1000uni}.
+
+\begin{figure}
+\centering\href{http://www.youtube.com/watch?v=PAdmASfMqAk}{
+\begin{overpic}[width=\columnwidth]{CircLyapunov2000uniLyapunovFunc}\end{overpic}\\
+\vspace{2em}
+\begin{overpic}[width=\columnwidth]{CircLyap1000uniStateXYplot}\end{overpic}}
+\caption{\label{fig:CircLyap1000uni} Continuous time simulation of $n$ robots, with $\epsilon \in [0.5,1.5]$, initially evenly distributed about the unit circle and steered to $(0,0)$ using control policy \eqref{eq:FiniteControlPolicy}.  The simulation was run with $n = \{1000,2000\}$.  Each trial achieved the same ending error, as shown in the top plot.  State trajectories of the system are shown in the bottom plot.  Lines show the path followed for five particular values of $\epsilon$.\\
+\href{http://www.youtube.com/watch?v=PAdmASfMqAk}{(Video online: http://www.youtube.com/watch?v=PAdmASfMqAk)}.
+}
+\end{figure}
+
+\item[Unidirectional vs.~Bidirectional Control Inputs:]  robots are initialized in the same manner as \emph{Point to Point}, but simulated with the bidirectional control policy \eqref{eq:FiniteControlPolicy} and the unidirectional control policy \eqref{eq:UnidirectionalControlPolicy}.  The error for unidirectional policy is on average twice that of the bidirectional policy. Results are shown in Fig.~\ref{fig:UniVsBidirectionalInputs}.
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{UniVsBidirectionalInputs}\end{overpic}
+\caption{\label{fig:UniVsBidirectionalInputs} Lyapunov function for a continuous time simulation of $n=1000$ robots, with $\epsilon \in [0.5,1.5]$, all initialized to $(1,1)$ and steered to $(0,0)$ using the bidirectional control policy \eqref{eq:FiniteControlPolicy} and the unidirectional control policy \eqref{eq:UnidirectionalControlPolicy}.  The error for unidirectional policy is on average twice that of the bidirectional policy.}
+\end{figure}
+\end{description}
+
+\subsection{Discrete Time Simulation}
+
+\begin{figure}
+\centering
+\frame{\href{http://www.youtube.com/watch?v=btWFQrBhrLI}{\begin{overpic}[width=\columnwidth]{FiniteStateRoboticsIllinois}\end{overpic}}}
+\caption{\label{fig:DiscreteSim}
+Simulation results from applying the control policy from Eq. \eqref{eq:DiscreteFiniteControlPolicy} for 120 robots with unicycle kinematics.  Wheel size ($\epsilon$) was evenly distributed from 0.5 to 1.5.  The plot shows the starting `${\textcolor[rgb]{0,0.5,0}{ +}}$' and ending `${\textcolor{red}{\circ}}$' positions along with 8 selected state trajectories.\\
+\href{http://www.youtube.com/watch?v=btWFQrBhrLI}{(Video online: http://www.youtube.com/watch?v=btWFQrBhrLI)}
+}
+\end{figure}
+
+
+We simulated a discrete-time collection of 120 robots under various levels of noise with both differing and identical values of $\epsilon$.  Sample trajectories are shown in Fig.~\ref{fig:DiscreteSim}.  We explored three different cases:
+\begin{description}
+\item[Different $\epsilon$ Values:]
+Simulating with differing $\epsilon$, we found that with no noise, the position error of our robot collection converged to zero error.  When the noise model \eqref{eq:NoiseModel} was applied, the error converged to a non-zero value for small values of noise, and diverged for large values of noise, as shown in Fig.~\ref{fig:Noise1}.
+
+\item[Identical Robots:]
+When all 120 robots are identical, the smallest position error is achieved within a specific intermediate range of noise values.  Large $\alpha$ values caused the error to diverge, while small $\alpha$ values led to very slow convergence.  This result is shown in Fig.~\ref{fig:Noise2}.
+
+\item[Effect of Rotational Noise:]
+Again with identical robots, we held the translational and cross-term noise at 0.01, a value which converged quickly in the previous simulation, and varied the rotational noise, $\alpha_1$.  We found that convergence rate increased with $\alpha_1$, up to a limit of approximately $\alpha_1 = 1$. This result is shown in Fig.~\ref{fig:Noise3}.
+\end{description}
+
+These results show that noise is necessary for a finite collection of identical robots to be controllable. This is a subset of a larger class of problems for which noise is beneficial, or even necessary, for stability and control.
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{ErrorNoiseDiffwheels}
+\caption{\label{fig:Noise1}
+Error of a discrete-time, finite collection of 120 robots simulated under a standard noise model \eqref{eq:NoiseModel} with $\epsilon \in [0.5,1.5]$ under different levels of noise parametrized by $\alpha$; all $\alpha$ are equal. 
+}
+\end{figure}
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{ErrorNoiseIdentical}
+\caption{\label{fig:Noise2}
+Error of a discrete-time, finite collection of 120 robots simulated under a standard noise model \eqref{eq:NoiseModel} with all $\epsilon$  set to 1.   $\alpha = 0.01$ provides the best convergence.
+}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[width=\textwidth]{ErrorNoiseVarya1}
+\caption{\label{fig:Noise3}
+Error of a discrete-time, finite collection of 120 robots simulated under a standard noise model \eqref{eq:NoiseModel} with all $\epsilon$  set to 1.  Focusing the noise in the rotation ($\alpha_1$) improves the convergence for identical robots.
+}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hardware Experiments}
+\label{sec:HardwareImplementationFeedbackDD}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{DiffDriveRobotsSideDiffWheelsSm}\end{overpic}
+\caption{\label{fig:DiffDriveRobotsSideDiffWheelsSm}
+Four differential-drive robots  with wheel diameters in the set $\{102, 108, 127, 152\}$ mm.  Each robot receives the same broadcast control signal, but the different wheel sizes scale the commanded linear and angular velocities. Robots courtesy of College of Engineering Control Systems Laboratory \cite{Block2012}.
+}
+\end{figure}
+
+
+Here, we describe our hardware system and explain our experimental procedures and results.
+
+\subsection{Differential-Drive Robots}
+Our differential robots have two large direct-drive wheels in the back, and a free-wheeling ball caster in the front, as shown in Fig.~\ref{fig:DiffDriveRobotsSideDiffWheelsSm}.  In the experiments shown in this chapter, we use wheels with diameters in the set $\{102, 108, 127, 152\}$ mm.  Trials with identical-size wheels all used 102 mm wheels, as shown in Fig.~\ref{fig:SizeComparison}. 
+
+\subsection{System Overview}
+A block diagram of our system in Fig.~\ref{fig: FlowChartHardware} shows the relevant hardware.
+The robots are commanded to either move linearly or turn in place in units of encoder ticks.  These commands are broadcast over 900 MHz radio using an AeroComm 4490 card.
+
+Four or five tracking dots are fixed to the top of each robot. These dots can be seen in Fig.~\ref{fig:SixRobotsOnTargets}. Position and orientation data for each vehicle are uniquely measured by an 18-camera NaturalPoint OptiTrack system with reported sub-millimeter accuracy.  A {\sc{Matlab}} program computes the control policy \eqref{eq:DiscreteFiniteControlPolicy} and sends the broadcast uniform control input.
+
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{FlowChartHardware}\end{overpic}
+\caption{\label{fig: FlowChartHardware}Block diagram for steering a multi-robot system with a broadcast uniform control input.}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{overpic}[width=.8\columnwidth]{SixRobotsOnTargets}\end{overpic}\caption{  \label{fig:SixRobotsOnTargets}
+Hardware experiment setup showing six differential-drive robots at their target locations.}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Online Calibration}
+%%%%%%%%%%%%%%%%%%%%%
+
+Calibration is not necessary for successful implementation of the controller, but it improves performance.  In our hardware experiments, for every translation command $u(k)$, we record beginning and ending positions to calculate $d_i$, the distance traveled, and update each $\epsilon_i$ value according to the following rule:
+\begin{align*}
+\epsilon_i(k+1)  &= \epsilon_i(k) +  K \frac{|u(k)|}{M}\left(  \frac{d_i}{|u(k)|} - \epsilon_i(k) \right).
+\end{align*}
+$K$ is the weighting we give new measurements of $\epsilon$, and $M$ is the maximum possible distance we may command the robot to move.  For the experiments shown here $K = 0.1$ and $M = 0.7$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Results}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+We conducted a series of experiments to show that our control policy converges in a real system. Fig.~\ref{fig: Diff4robotsHW} shows frames from a video of two of these experiments.  We show results for unique wheel sizes with online calibration, for unique wheel sizes without online calibration, and for identical wheels.
+
+\begin{figure}  %Diff6robotsHW1.jpg
+\href{http://www.youtube.com/watch?v=50gb5WMqJbY}{\begin{minipage}[b]{0.427\linewidth}
+\centering
+\begin{overpic}[width=\columnwidth]{Diff4robotsHW1}\end{overpic}\\
+\vspace{1em}
+\begin{overpic}[width=\columnwidth]{Diff4robotsHW2}\end{overpic}\\
+\vspace{1em}
+\begin{overpic}[width=\columnwidth]{Diff4robotsHW3}\end{overpic}\\
+\vspace{1em}
+\begin{overpic}[width=\columnwidth]{Diff4robotsHW4}\end{overpic}
+\end{minipage}
+\hspace{1.5em}
+\begin{minipage}[b]{0.5\linewidth}
+\centering
+\begin{overpic}[width=\columnwidth]{Diff6robotsHW1}\end{overpic}\\
+\vspace{1em}
+\begin{overpic}[width=\columnwidth]{Diff6robotsHW2}\end{overpic}\\
+\vspace{1em}
+\begin{overpic}[width=\columnwidth]{Diff6robotsHW3}\end{overpic}\\
+\vspace{1em}
+\begin{overpic}[width=\columnwidth]{Diff6robotsHW4}\end{overpic}
+\end{minipage}}
+\caption{  \label{fig: Diff4robotsHW}
+Photographs of hardware experiments steering  four differential-drive robots with different wheel sizes (left column) and six differential-drive robots with identical wheel sizes (right column).  The robots are initialized in a straight line and all receive the same control input from a wireless signal.   A motion capture system is used for feedback to steer the four robots to the colored targets and the six robots to rendezvous.  In the third frame a disturbance is injected by moving a single robot away from its target (left) and by splitting the ensemble (right).\\
+ \href{http://www.youtube.com/watch?v=50gb5WMqJbY}{(Video online: http://www.youtube.com/watch?v=50gb5WMqJbY)}
+}
+\end{figure}
+
+\begin{description}
+\item[Unique Wheel Sizes with Online Calibration:]
+Initially, each robot was assumed to have $\epsilon = 1$, and the actual values of $\epsilon$ were learned through online calibration.  The robots were successfully commanded from a horizontal line, to a box formation, to a vertical line, and finally to a tight box formation. The results in Fig.~\ref{fig:OnlineCaldiffsizes3moves} show convergence both in position and in $\epsilon$ values.  Online calibration requires persistent excitation, so convergence slows as the robots approach their targets.
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{OnlineCal_EpsilonValues}\end{overpic}
+\begin{overpic}[width=\columnwidth]{OnlineCaldiffsizes3moves}\end{overpic}
+\caption{  \label{fig:OnlineCaldiffsizes3moves}
+Hardware experiment with unique wheel sizes and online calibration. The top plot shows the convergence of $\epsilon$ values estimated by online calibration.  The bottom plot shows the summed distance error as the robots were successfully steered through the sequence of formations shown.
+}
+\end{figure} 
+\item[Unique Wheel Sizes without Calibration:]
+Surprisingly, it is not necessary to know or to learn the $\epsilon$ values.  For this entire experiment $\epsilon$ was set to 1.  Four robots were successfully commanded from a horizontal line to a box formation, and then to a vertical line.  For each formation the summed error converged to less than half a meter, as shown in Fig.~\ref{fig:NoCalDiffSizesTwoMoves}.
+
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{NoCalDiffSizesTwoMoves}\end{overpic}
+\caption{  \label{fig:NoCalDiffSizesTwoMoves}
+Hardware experiment with unique wheel sizes and no calibration. The plot shows the summed distance error as the robots were successfully steered through the sequence of formations shown.
+}
+\end{figure}
+
+\item[Identical Wheel Sizes:]
+Even with identical $\epsilon$ values, a collection of robots is still controllable due to process noise.  Fig.~\ref{fig:IdenticalWheels2Moves} shows successful convergence results of four robots with identical wheel sizes commanded to the same formations as the previous experiment.
+\begin{figure}
+\centering
+\begin{overpic}[width=\columnwidth]{IdenticalWheels2Moves}\end{overpic}
+\caption{  \label{fig:IdenticalWheels2Moves}
+Hardware experiment with identical wheel sizes. The plot shows the summed distance error as the robots were successfully steered through the sequence of formations shown.
+}
+\end{figure}
+\end{description}
+
+
+
+
+\subsection{Applications Enabled by Position Control}
+The ability to control position enables many tasks.  In a video at \url{http://www.youtube.com/watch?v=z-t1rl0C4ic}, we demonstrate robot rendezvous using six robots with identical-sized wheels.  Robot rendezvous robustly collects all the robots to one position; this primitive operation could be useful for alignment of micro- and nano-robots.  To achieve robot rendezvous, the goal position of each robot is set to the mean position of the ensemble.
+
+Dispersion is the opposite of gathering.  To achieve dispersion, the goal position of each robot is set to the mean of the ensemble, but the control policy is set to $u_1(t) = F(t)$, which will repel robots from each other.  Dispersion may be useful for distributing micro- and nano-robots over a substrate.
+
+Other tasks include forming subgroups, path- and trajectory-following, and pursuit/avoidance.   Each can be implemented by a suitable selection of time-varying target locations in \eqref{eq:FiniteControlPolicy}.  A simulation of trajectory-following is shown in Fig.~\ref{fig:DiffDriveTrajFollowing}. 
+
+\begin{figure}
+\centering
+\href{http://www.youtube.com/watch?v=z-t1rl0C4ic}{\begin{overpic}[width=.22\columnwidth]{DiffDriveTrajFollowing1}\put(2,2){$k = 0$}\end{overpic}
+\begin{overpic}[width=.22\columnwidth]{DiffDriveTrajFollowing501}\put(2,2){$k = 500$}\end{overpic}
+\begin{overpic}[width=.22\columnwidth]{DiffDriveTrajFollowing1001}\put(2,2){$k = 1000$}\end{overpic}
+\begin{overpic}[width=.22\columnwidth]{DiffDriveTrajFollowing1501}\put(2,2){$k = 1500$}\end{overpic}\\
+\vspace{.5em}
+\frame{\begin{overpic}[width=.91\columnwidth]{DiffDriveTrajFollowingFinal}
+\put(29,37){$\nwarrow$}
+\put(29,33){$\epsilon = 0.5$}
+\put(70,7){$\nwarrow$}
+\put(70,3){$\epsilon = 1.5$}
+\put(2,2){$k = 2000$}
+\end{overpic}}\\
+\vspace{.5em}
+\begin{overpic}[width=.97\columnwidth]{DiffDriveTrajFollowingError}
+\put(5,5){\begin{sideways} Lyapunov Error\end{sideways}}
+\put(45,-3){Steps}
+\end{overpic}}\\
+\vspace{2em}
+
+\caption{ \label{fig:DiffDriveTrajFollowing} Simulation of trajectory-following.  Six differential-drive robots with wheel sizes ranging from 0.5 to 1.5 of nominal are steered with a common control signal to follow trajectories that spell out `RMSLAB'.  The top left robot (\textcolor{blue}{blue}) has the smallest wheels while the lower right robot (\textbf{black}) has the largest wheels. The bottom plot shows that the Lyapunov function stabilizes around 0.37.\\ 
+\href{http://www.youtube.com/watch?v=z-t1rl0C4ic}{(Video online: http://www.youtube.com/watch?v=z-t1rl0C4ic)}
+}
+\end{figure}
+In a similar manner we can incorporate collision and obstacle avoidance by adding a potential field to the control policy \eqref{eq:GAScontrolpolicy} as in \cite[Chap. 4]{Choset2005}.  A sample run of a simulation using potential fields to avoid two obstacles is shown in Fig.~\ref{fig:ObsAvoid120robots000393}.
+\begin{figure}
+\centering
+\href{http://www.youtube.com/watch?v=5W8Sc2FwhxM}{\frame{\begin{overpic}[width=.96\columnwidth]{ObsAvoid120robots000393}
+%\put(29,37){$\nwarrow$}
+%\put(29,33){$\epsilon = 0.5$}
+%\put(70,7){$\nwarrow$}
+%\put(70,3){$\epsilon = 1.5$}
+%\put(2,2){$k = 2000$}
+\end{overpic}}}
+\vspace{2em}
+\caption{ \label{fig:ObsAvoid120robots000393} %\href{http://www.youtube.com/watch?v=5W8Sc2FwhxM}{
+Simulation using potential fields for obstacle avoidance.  120 robots with varying wheels sizes $\epsilon \in [0.5,1.5]$ are steered from the start position in green to the goal position spelling the word ``ILLINOIS''.  The current robot position is drawn in red, and the path from start to goal for each robot is drawn in black.\\ 
+\href{http://www.youtube.com/watch?v=5W8Sc2FwhxM}{(Video online: http://www.youtube.com/watch?v=5W8Sc2FwhxM)}
+}
+\end{figure}
+
+Micro/nano-manipulation and assembly are the focus of considerable micro and nano-robotics research. Sitti, Yu, and Cecil provide surveys of nano-manipulation and assembly \cite{Sitti2001,Yu2003,Cecil2007}.  Savia and Koivo focus on a survey of contact strategies for micro manipulation \cite{Savia2009}.
+ Micro/nano-manipulation refers to manipulating objects at the micro- and nano-scale, while assembly describes building structures from smaller components.  The ability to control position and track trajectories enables an ensemble of micro- and nano-robots to be used as a manipulator.  One advantage of using an ensemble control method over other methods, e.g.\ an atomic force microscope tip, is that ensemble methods allows the simultaneous manipulation of  multiple objects.
+Fig.~\ref{fig:Assembly} shows frames from a simulation where six robots assemble a structure from three smaller components.  The simulated robots receive exactly the same force and torque input commands, but each robot scales these commands by a unique constant. % The simulation required 5,000 steps.  
+These simulations were performed using Box2D, version 2.0.1  (available: \url{http://box2d.org/}).
+\begin{figure}
+\centering
+\href{http://www.youtube.com/watch?v=VeZF6aT-hog}{
+    \begin{minipage}[b]{0.4\linewidth}
+    \centering
+    \begin{overpic}[width=\columnwidth]{Assembly1.pdf}\end{overpic}\\
+    \vspace{0.5em}
+    \begin{overpic}[width=\columnwidth]{Assembly3.pdf}\end{overpic}\\
+    \vspace{0.5em}
+    \begin{overpic}[width=\columnwidth]{Assembly5.pdf}\end{overpic}\\
+    \end{minipage}
+    \hspace{0.5em}
+    \begin{minipage}[b]{0.4\linewidth}
+    \centering
+    \begin{overpic}[width=\columnwidth]{Assembly2.pdf}\end{overpic}\\
+    \vspace{0.5em}
+    \begin{overpic}[width=\columnwidth]{Assembly4.pdf}\end{overpic}\\
+    \vspace{0.5em}
+    \begin{overpic}[width=\columnwidth]{Assembly6.pdf}\end{overpic}\\
+    \end{minipage}}
+    \caption{  \label{fig:Assembly}
+    Image frames from an assembly and manipulation simulation.  Six differential-drive robots are drawn with pink circles and they simultaneously manipulate three diamond-shaped objects.  The goal trajectories are represented with yellow circles.  In 5,000 steps the robots approach the objects (frames 1--3), push them into position (4-5), and then orient them to assemble the final object (6).
+\\    \href{http://www.youtube.com/watch?v=VeZF6aT-hog}{(Video online: http://www.youtube.com/watch?v=VeZF6aT-hog)}
+    }
+\end{figure}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusion}
+\label{sec:ConclusionFeedbackDD}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this chapter we investigated ensembles of unicycles that share a uniform control input. Through Lyapunov analysis, we derived a globally asymptotic stabilizing controller for a continuous-time, infinite ensemble.  We extended this controller to finite collections of unicycles in continuous and discrete time.  In simulation, we showed that a discrete-time, finite ensemble of unicycles converges asymptotically and rejects disturbances from a standard noise model.  In hardware experiments, we demonstrated online calibration which learned the unknown parameter for each robot.  These experiments led to surprising results that {\em (1)} our controller still works when all wheel sizes are wrong and {\em (2)} in the presence of noise, our controller works even when all wheel sizes are the same.
+
+This work shows that a collection of unicycles with uniform inputs to all robots can be regulated to arbitrary positions, reject disturbances from a standard noise model, and converge to goals with global asymptotic stability.  This work may be particularly relevant to systems of micro- and nano-robots, which are often constrained to uniform inputs.
+
+
+

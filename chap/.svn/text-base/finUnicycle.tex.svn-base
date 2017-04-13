@@ -1,0 +1,642 @@
+% Thesis 
+
+\chapter[Finite Ensemble of Unicycles]{Finite Ensemble of Unicycles}
+\label{chap-finUnicycle}
+
+%\title{Robust Steering a finite ensemble of Unicycles with a Single Global Control Signal}
+
+%\begin{abstract}
+%A kinematic unicycle has two inputs corresponding to linear and angular velocity.  We are interested in controlling groups of unicycles that share a single global control signal.  It is easy to show that a group of identical kinematic unicycles is uncontrollable.  In our earlier work we proved that parameters exist such that if each unicycle has a unique parameter value, the entire collection is controllable with regards to position.  Our results took the form of open-loop motion paths.  In this chapter we demonstrate feedback techniques for controlling collections of unicycles.  This enables us to guarantee stability under common classes of noise.  Surprisingly, we show that for a collection of identical unicycles armed with a primitive that independently rotates each robot randomly, the ensemble is controllable with regards to position.
+%\end{abstract}
+
+\section{Introduction}\label{sec:Intro}
+%\todo{Should we call $n$ unicycles with different radius wheels a finite ensemble or a collection of robots?}  Finite ensemble
+In particular, consider a single unicycle that rolls without slipping. We describe its configuration by $q=(x,y,\theta)$ and its configuration space by $\Cspace = \R^2 \times \field{S}^1$. The control inputs are the forward speed
+%~${u_1\in\R}$
+$u_{1}$
+and the turning rate
+$u_{2}$.
+%$u_2\in\R$.
+%We define a constraint set $\Uspace\subset\R^{2}$ that is symmetric with respect to the origin and that has affine hull $\R^{2}$.
+We restrict $(u_{1},u_{2})\in\Uspace$ for some constraint set $\Uspace\subset\R^{2}$,
+%with the standard assumption
+where we assume that $\Uspace$ is symmetric with respect to the origin and that the affine hull of $\Uspace$ is $\R^{2}$.
+%where we assume that $\Uspace$ is symmetric about the origin and that the affine hull of $\Uspace$ is $\R^{2}$.
+Corresponding to these inputs, we define vector fields~$g_1,g_2\colon\Cspace\to{T_q\Cspace}$ by
+\[
+g_1(q) = \begin{bmatrix} \cos\theta\\ \sin\theta\\ 0 \end{bmatrix}
+\qquad\qquad
+g_2(q) = \begin{bmatrix}  0\\ 0\\ 1 \end{bmatrix}
+\]
+and write the kinematics of the unicycle in the standard form
+\begin{equation}
+\label{eq:one}
+\dot{q}(t) = g_1(q(t)) u_1(t) + g_2(q(t)) u_2(t).
+\end{equation}
+%Given start and goal configurations~$\qstart$ and~$\qgoal$, the steering
+%problem for a single unicycle is to find open-loop inputs
+%\begin{align*}
+%u_{1}(t) &\colon [0,T] \to \R \\
+%u_{2}(t) &\colon [0,T] \to \R,
+%\end{align*}
+%possibly subject to input constraints $(u_{1},u_{2}) \in \mathcal{U}\subset\R^{2}$, that result in $q(0)=\qstart$ and $q(T)=\qgoal$ for free final time $T$.
+%Say we are given start and goal configurations $\qstart,\qgoal\in\Cspace$ and some tolerance $\mu>0$. The approximate steering
+ Given $q_{\text{start}}, q_{\text{goal}} \in \Cspace$ and $\mu>0$, the approximate steering problem
+%for a single unicycle
+is to find open-loop inputs
+\[
+\left(u_{1}(t),u_{2}(t)\right) \colon [0,T] \to \Uspace
+\]
+that result in $q(0)=q_{\text{start}}, $ and $\norm{ q(T)-q_{\text{goal}}}\leq\mu$ for free final time $T$, where $\norm{\cdot}$ is a suitable norm on $\Cspace$.
+%We know that such inputs exist 
+%To show that such inputs exist, we have only to verify that $T_{q}\Cspace$ is spanned by the Lie algebra
+%We know that such inputs exist because $g_{1}$, $g_{2}$, and the Lie bracket $[g_{1},g_{2}]$ span the tangent space $T_{q}\Cspace$ everywhere.
+If such inputs always exist then we say that \eqref{eq:one} is {\em approximately controllable}---and indeed they do, since $g_{1}$, $g_{2}$, and the Lie bracket $[g_{1},g_{2}]$ span the tangent space $T_{q}\Cspace$ everywhere.
+
+
+We will solve this same approximate steering problem, but under model perturbation that scales both the forward speed $u_{1}$ and the turning rate $u_{2}$ by some known constant. The resulting kinematics have the form
+\begin{equation}
+\label{eq:oneuncertain}
+\dot{q}(t) = r\left( g_1(q(t)) u_1(t) + g_2(q(t)) u_2(t) \right),
+\end{equation}
+where $r = [r_1,\ldots,r_m]$ for some $0 \leq \delta < 1$. Our approach is to steer the entire collection of unicycles parameterized by~$r$, each one governed by
+\begin{equation}
+\label{eq:ensemble}
+\dot{q}(t,r) = r \bigl( g_1\left( q(t,r) \right) u_1(t) + g_2\left( q(t,r) \right) u_2(t) \bigr).
+\end{equation}
+
+ \begin{figure}
+\centering
+\begin{overpic}[width=.8\columnwidth]{EnsembleRCsmall}          
+\end{overpic}
+\caption{  Five diff-drive robots commanded by a single control signal.
+A collection $n$ of diff-drive robots with unicycle kinematics can be steered to arbitrary goal positions if each robot has a unique wheel radius.  In this chapter we provide three closed-loop feedback algorithms for steering such an ensemble.
+}
+\label{fig: EnsembleRCsmall}
+\end{figure}
+
+
+\subsection{Motivation}
+
+
+ Today's micro robots have little-to-no onboard computation, and most are powered and controlled by global signals.  Swarms of these microrobots are massively under-actuated systems. We need new control strategies to enable large numbers of robots do useful tasks.  This chapter analyzes one particular microrobot architecture, proves that these robots are controllable, and describes a motion planning strategy for these robots.  Preliminary simulations are provided %(\href{https://wiki.engr.illinois.edu/download/attachments/21331994/Compass5s.mov}{Sim1}
+%\href{https://wiki.engr.illinois.edu/download/attachments/21331994/LargeEnsemble.mov}{Sim2}).\\
+  Our previous work \cite{Becker 2010}, analyzed scratch drive robots \cite{Donald2006,Donald2008}.  These robots receive a electrical signal from a substrate that encodes  velocity and turning commands.  Scratch drive robots have bounded uncertainty in their velocity which scales both their forward velocity and their turning rate.  This inhomogeneity allows control of large numbers of robots using the same global signal.  We demonstrated that position control (but not orientation control) is possible for these robots.  Artificial Bacterial Flagella (ABF) receive their control signals from a magnetic field emitted by 3 orthogonal Helmholtz coils .  This field causes all ABF's to share the same orientation.  By rotating this field, the ABFs will spin and their helical tails convert this spinning into forwards or backwards motion.  The coupling of orientation introduces control challenges when we want to control more than one ABF.  There are many inhomogeneities that exist or could be introduced to the ABFs, but the coupling of orientation prevents many of these from allowing controllability. In this note we demonstrate that an inhomogenity in orientation turning rate leads to controllability to arbitrary positions for an ensemble of ABF robots.\\
+ Following the example of \cite{Brockett1999,Khaneja2000,Li2006b,Li2009,Li2007,Li2006,Li2006a}, we define an ensemble as controllable if we can move the ensemble from starting configuration $\mathbf{x}_s(0)$ to within some $\Delta$ ball of ending configuration $\mathbf{x}_e$  for arbitrary $\mathbf{x}_s(0), \Delta$, and $\mathbf{x}_e$.  
+ 
+
+
+ 
+ 
+ Unfortunately, our motivating problem, the \emph{scratch-drive robots} designed and built by Donald et al. \cite{Donald2006,Donald2008}, can only provide the inputs $\{(0,1),(1,0)\}$\footnote{By defining the coordinate frame of the scratch-drive robot to be centered at the center of rotation, the scratch-drive robot can turn in place.}.  Since the affine hull of these inputs does not span the origin, the LARC condition guarantees only small-time local accessibility (STLA), and not the small-time local controllability (STLC) sufficient to prove global controllability.  To prove global controllability, we must instead provide a constructive algorithm that, under the restricted set of inputs, can steer the ensemble within $\mu$ of a goal location in $\R^2$.  This is the approach taken to show global controllability of Dubins' car, a kinematic unicycle with a minimum turning radius that cannot reverse, in \cite{Murray1994,LaValle2006,Choset2005}.
+ 
+ \subsection{Outline}
+This chapter is organized as follows.  We begin in section \ref{sec:ProveControllabiltiy} by proving the system is controllable with regard to position.  We then introduce three candidate algorithms in sections  \ref{sec:AlgAveError}, \ref{sec:AlgMaxError}, and \ref{sec:AlgLinError}.  We discuss simulation results in \ref{sec:Results}, and end with concluding remarks in section \ref{sec:Conc}.
+ 
+ 
+ 
+\section{Proving Controllability}\label{sec:ProveControllabiltiy}
+As in our work with infinite ensembles, the orientation of a finite ensemble is not fully controllable, however it is possible to achieve approximate consensus in orientation.  We can show controllability of the position of the finite ensemble under inputs whose convex hull spans $\R^2$.
+
+\subsection{Orientation}\label{sec:Orient}
+With a finite ensemble, we cannot steer the orientation to any desired goal orientation.  We often cannot  bring the entire ensemble to converge to the same orientation $\mod(2\pi)$.  However, given a $\mu > 0 $ we can find a $z$ such that there exists a $\phi$  such that $\left|\mod(\theta_i,2\pi) - \phi\right| < \mu$ for all robot orientations $\theta_i$ in the ensemble.
+%\todo{ write up these proofs.  The first two are in my weekly reports.}
+
+\subsection{Orientation Consensus---Infinite}
+It is impossible to make a continuum of robots, all initialized at $\theta(0,\epsilon)$ with different turning rates $\epsilon$ agree in orientation at any angle other than $0$.  
+
+	\begin{figure}
+	\centering
+	\begin{overpic}[width = 0.24\linewidth]{SeveralRobots.pdf}\end{overpic}
+	\begin{overpic}[width = 0.7\linewidth]{Turns.pdf}\end{overpic}
+	\caption{\label{fig:TurnsOrientationConsensus}
+	 Ensemble orientation is shown by blue line (if initialized at $\theta=0$) as a function of input turn command $u$.  Shown is $u = \left[0,1,2,3,4,5\right]$ revolutions.  For an ensemble with turning deviations $\epsilon = 1 \pm 20\%$, the slowest and fastest robots align after $u= 2.5$ revolutions.  Complete overlap occurs at $u=5$.  As $u\rightarrow\infty$, the maximum number of overlaps $\rightarrow\infty$ at rate $=u/2.5$.   The range of the ensemble's orientation $=2u\frac{2}{5}$. A vector starting from the origin shows all values of $\sigma$ that are in alignment (i.e. red arrow), but the entire ensemble is only aligned at $u=0$}
+	\end{figure} 
+	
+
+\subsection{Exact Orientation Consensus}
+\begin{theorem}
+We cannot always make a finite ensemble of unicycles with different turning rates agree in orientation.
+\label{thm:orientationFiniteNotControllable}
+\end{theorem}
+\begin{IEEEproof}
+ Consider 3 robots; $a,b,c$, all with different turning rates, where
+
+%\begin{figure}
+%\centering
+%\begin{overpic}[width = .5in]{SeveralRobots.pdf}\end{overpic}
+%\caption{Three robots with different turning rates }
+%\end{figure} 
+
+
+\begin{itemize}
+\item $a$ turns at unit velocity
+\item $b$ turns at 2*unit velocity
+\item $c$ turns at $e$*unit velocity\footnote{ $e$ is the base of the natural logarithm ($\approx2.718\ldots$).}
+\end{itemize}
+If all three unicycles are initialized in same direction and commanded to turn at the max turning rate,  there does not exist a time when they next align.   
+ Here,  unicycle orientation at time $t$ is $t\cdot 2\pi$, $t \cdot \pi$ and $t \cdot e\pi$.
+  Unicycles $a$ and $b$ coincide infinitely often at $t = k2\pi$ for $k \in \field{Z}$.
+  Robots $b, c$ coincide infinitely often when
+  \[ mod(t,2\pi) = mod(t\cdot e,2\pi).\]
+ However, the ensemble $a,b$ and $c$ only coincides when:
+   \[ mod(k2\pi,2\pi) = mod(k2\pi\cdot e,2\pi)\]
+Per modular arithmetic, we can divide by the common term $2\pi$:
+\begin{align*}  mod(k,1) = mod(k\cdot e,1)\\
+   0= mod(k\cdot e,1)
+   \end{align*}
+ This equality only holds when the quantity  $k \cdot e \in \field{Z}$ for $k \in \field{Z}$.  Since $e$ is an irrational number, this does not occur, because the product of a rational and an irrational number is always an irrational  number.
+\end{IEEEproof}
+
+
+\subsection{Orientation Consensus}
+
+	A control system is  approximately controllable if for every $\mu > 0$, and $q_{\text{start}},q_{\text{goal}}\in\mathcal{Q}$ there exist inputs such that for some $T>0$:
+	\begin{align*}
+	q(0)&=q_{\text{start}} \\
+	|q(T)-q_{\text{goal}}|&< \mu
+	\end{align*}
+
+	For any finite  set of robots with unique turning rates we can always find a finite $T$ such that the robots align (within any given $\mu$ error), since we can approximate any irrational number to arbitrary precision with a rational number.  
+
+
+
+\subsection{controllable subsystem}
+We can extract a subsystem that represents the $x$ and $y$ coordinates of each unicycle in the ensemble and $\gamma(t)$, the integral of all turning rate commands.
+The evolution of this subsystem is governed by the alternate kinematic model
+\begin{equation}
+\label{eq:subsystem}
+\dot{p}(t,r) = r h_1\left( p(t,r), r \right) u_1(t) + h_2\left( p(t,r), r \right) u_2(t),
+\end{equation}
+where
+\begin{gather}
+\label{eq:vectorfields}
+\begin{split}
+h_1\left(p(t,r), r\right) &= \begin{bmatrix} \cos{\left(\theta(0,r) + r \gamma(t)\right)}\\ \sin{\left(\theta(0,r) + r \gamma(t)\right)}\\ 0 \end{bmatrix} \\
+h_2\left(p(t,r), r\right) &= \begin{bmatrix}  0\\ 0\\ 1 \end{bmatrix}
+\end{split}
+\end{gather}
+
+
+\subsection{Position}\label{sec:position}
+We will now prove that the reduced subsystem consisting of the position of the robots is controllable. For $n$ kinematic unicycles, this subsystem has $2n+1$ states:  [$n$ $x$-coordinates, $n$ $y$-coordinates, $1$ integral of turning inputs]. 
+ We will prove controllability by using repeated bracketing to get higher-order powers of $r$ until we attain the Lie Algebra Rank Condition (LARC) with $2n+1$ controllable vector fields.
+\begin{theorem}
+\label{thm:controllable}
+The system \eqref{eq:subsystem} is controllable.
+\end{theorem}
+\begin{IEEEproof}
+Taking Lie brackets, we have
+\begin{align*}
+[r h_1,h_2]
+&= r \left( \frac{\partial h_2}{\partial p} h_1 - \frac{\partial h_1}{\partial p} h_2 \right) \\
+&= 0-r \begin{bmatrix} 0 & 0 & -r s \\ 0 & 0 & r c \\ 0 & 0 & 0 \end{bmatrix} \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} \\
+&= r^{2} \begin{bmatrix} s \\ -c \\ 0 \end{bmatrix}
+\end{align*}
+and
+\begin{align*}
+[[r h_1,h_2],h_{2}]
+&= 0 - r^{2} \begin{bmatrix} 0 & 0 & r c \\ 0 & 0 & r s \\ 0 & 0 & 0 \end{bmatrix} \begin{bmatrix} 0 \\ 0 \\ 1 \end{bmatrix} \\
+&= - r^{3} \begin{bmatrix} c \\ s \\ 0 \end{bmatrix} \\
+&= -r^{3} h_{1}.
+\end{align*}
+Let us define
+\[
+h_{3} = \begin{bmatrix} -s \\ c \\ 0 \end{bmatrix},
+\]
+so that~$[r h_{1},h_{2}] = -r^{2} h_{3}$.
+Repeating this process, we can produce control vector fields of the form
+$r^{2i+1}h_{1}$
+and
+$r^{2i+2}h_{3}$
+for any $i\geq 0$.   To attain $2n+1$ vector fields we need $i = n$.
+\end{IEEEproof}
+
+\section{Position Controllability Under Velocity Constraints}
+In chap \ref{chap-extUnicycle}, we proved that an infinite ensemble is controllable, even under velocity constraints such that the angular and linear velocities are nonnegative.  Since any finite ensemble is a proper subset of an infinite ensemble, a finite ensemble is controllable.
+
+
+\section{Discrete Algorithms}
+For each algorithm we consider $n$ robots, each with unique wheel radius $r_i$. We represent the robots as a discrete time system with bounded noise proportional to the velocity command $u$, i.e. $n_x, n_y \in u[-\psi,\psi]$. To reduce the order of the problem, we assume on odd time steps the ensemble receives a constant command to rotate $(u,v) = (0,\phi), \phi < \pi/\max(r_i)$ and on even time steps receives free command on the linear velocity $(u,0)$.    Because each robot's goal is defined in terms of it's own reference frame, we can, without loss of generality, we will define a coordinate system such that the goal is at the origin for each robot.  Each algorithm we present can steer $n$ robots to arbitrary $x_i,y_i$ ending points with asymptotically decreasing error. 
+%\todo{ still need to prove the exponential part.}  % can't do this... simulation indicates it is slightly slower than exponential
+
+\section{Algorithm 1: Minimizing the Average Error}\label{sec:AlgAveError}
+
+Our first algorithm at every odd time step chooses $u$ to minimize the average squared error.
+\begin{align}
+J_1(q_k,k,u_k) &= \frac{1}{2} \sum_{i=1}^n \left(x_{i,k+1}^2 + y_{i,k+1}^2\right)   %\sqrt{x_{i,k+1}^2 + y_{i,k+1}^2}
+\label{eq:JaveError}
+\end{align}
+where for odd time steps
+\begin{align*}
+x_{i,k+1} &= x_{i,k} + u_k \cdot r_i \cdot \cos( \theta_{i,k})\\
+y_{i,k+1} &= y_{i,k} + u_k \cdot r_i \cdot \sin( \theta_{i,k})\\
+\theta_{i,k+1} &= \theta_{i,k}
+\end{align*}
+and at even time steps
+\begin{align*}
+x_{i,k+1} &= x_{i,k} \\
+\theta_{i,k+1} &= \theta_{i,k} + r_i \cdot \phi
+\end{align*}
+
+The minimizing linear velocity to \eqref{eq:JaveError} is given by setting the derivative of $J_1$ to zero and solving for $u$ in line \ref{eq:uJaveError} of Algorithm \ref{Alg:MinAveError}.
+\begin{algorithm}                      % enter the algorithm environment
+\caption{\textsc{MinAveError}}
+	\label{Alg:MinAveError}                          % and a label for \ref{} commands later in the document
+%\scriptsize{
+\begin{algorithmic}[1]
+	%\SetAlgoLined
+	\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\REQUIRE{$ [x_i,y_i,\theta$] and $r$ for all $i$ in robot ensemble \\
+
+$\mu>0$,  assume goal at $(0,0)$}
+	\ \\
+	\STATE $c = \sum_{i=1}^n \sqrt{x_i ^2 + y_i ^2}$
+	\WHILE{ $c  > \mu$ }
+%  This reqires the weird normalizing part
+%\STATE	\[u  = - \frac{\sum_{i=1}^n r_i  \Big({x_{i,k} \cdot  \cos( \theta_{i,k})  +   y_{i,k} \cdot \sin( \theta_{i,k})  }  \Big)}{  \sum_{i=1}^n{ r_i  \Big(\cos(\theta_{i,k} )   +\sin(\theta_{i,k} )\Big) } }\label{eq:uJaveError}\]
+\STATE	\[u  = - \sum_{i=1}^n r_i  \Big(x_{i,k} \cdot  \cos( \theta_{i,k})  +   y_{i,k} \cdot \sin( \theta_{i,k})  \label{eq:uJaveError}\]
+	\ \\
+	\STATE  Apply $(u,0)$ to the ensemble for 1 unit of time
+	\STATE  Apply $(0,\phi)$  to the ensemble for 1 unit of time
+	\STATE  Measure $[x,y,\theta]$ state of ensemble	
+	\STATE $c = \sum_{i=1}^n \sqrt{x_i ^2 + y_i ^2}$
+\ENDWHILE
+\end{algorithmic}%}
+\end{algorithm}
+%\begin{align}
+%u_k = - \frac{\sum_{i=1}^n r_i  \Big({x_{i,k} \cdot  \cos( \theta_{i,k})  +   y_{i,k} \cdot \sin( \theta_{i,k})  }  \Big)}{  \sum_{i=1}^n{ r_i  \Big(\cos(\theta_{i,k} )   +\sin(\theta_{i,k} )\Big) } }.
+%\label{eq:uJaveError}
+%\end{align}
+
+Note that, alternatively,  we can maximally increase the cost function $J_1$ by choosing control input $-u_k$, to quickly disperse the ensemble.  %Such techniques may be useful for 'turning-off' the killing power of combined toxicity by spreading out the ensemble.  
+
+\subsubsection{Velocity Constraints}
+The control law in line \ref{eq:uJaveError} assumes we can generate the control inputs $(\pm1,0)$ and $(0,v)$.  The \emph{scratch-drive robots} can only generate the positive inputs $(1,0)$ and $(0,v)$. In this case, $J_1$ still monotonically decreases, but we will apply the control input $\max(0,u)$.  This input will now be $0$ half of the time.
+
+\todo{  write these techniques in 3D.}
+
+
+\subsection{Disturbance Rejection}
+Under a multiplicative, bounded noise model, where the noise is drawn from $n_x,n_y \in  [-\nu,\nu]$, the state update is
+\begin{align*}
+x_{i,k+1} &= x_{i,k} + u_k \cdot r_i \cdot \left(\cos \theta_{i,k}  + n_x\right)\\
+y_{i,k+1} &= y_{i,k} + u_k \cdot r_i \cdot \left(\sin \theta_{i,k}  + n_y\right).\\
+\theta_{i,k+1} &= \theta_{i,k}.
+\end{align*}
+This type of noise occurs when the commanded control $u_k$ is corrupted, either in transmission or in implementation on the robot.
+We will analyze the worst case behavior to find bounds on the amount of disturbance that can be rejected.
+In the worst case, the noise acts on every robot in the opposite manner intended.  Then, given a control $u_k$ that without noise reduced $J_k$ to $J_{k+1}$, $\Delta J = J_k - J_{k+1} \ge 0$,  we can calculate a maximum bound on the noise $\nu$:
+
+
+
+
+
+\begin{align*}
+J_k &= \frac{1}{2} \sum_{i=1}^n x_i^2+y_i^2\\
+J_{k+1}      &= \frac{1}{2} \sum_{i=1}^n \Big(x_i+u r_i  (\cos \theta_{i}  + n_x)\Big)^2 +\Big(y_{i,k} + u r_i (\sin \theta_{i}  + n_y)\Big)\\
+&= \frac{1}{2} \sum_{i=1}^n x_i^2+2 x_i u r_i  (\cos \theta_{i}  + n_x) + u^2 r_i^2  (\cos \theta_{i}  + n_x)^2 \\
+                              &\qquad+y_i^2+2 y_i u r_i  (\sin \theta_{i}  + n_y) + u^2 r_i^2  (\sin \theta_{i}  + n_y)^2 \\
+&\le \frac{1}{2} \sum_{i=1}^n \Big(x_i^2+2 x_i u r_i  (\cos \theta_{i}  + \nu) + u^2 r_i^2  (\cos \theta_{i}  + \nu)^2 \\
+                              &\qquad+y_i^2+2 y_i u r_i  (\sin \theta_{i}  + \nu) + u^2 r_i^2  (\sin \theta_{i}  + \nu)^2\Big)\\
+&\le J_{k+1} + \frac{1}{2} \sum_{i=1}^n \Big(2 x_i u r_i  \nu + u^2 r_i^2  (2\cos \theta_{i}\nu  + \nu^2) \\
+                              &\qquad+2 y_i u r_i  \nu + u^2 r_i^2  (2\sin \theta_{i}\nu  + \nu^2\Big)\\
+&\text{assume $\nu<1$, $ x_m = \max_i (x_i,y_i)$}\\
+&\le J_{k+1} + \frac{1}{2} \sum_{i=1}^n \Big(2 x_m u r_i  \nu + u^2 r_i^2 \nu  (2\cos \theta_{i} + 1) \\
+			      &\qquad+2 x_m u r_i  \nu + u^2 r_i^2 \nu  (2\sin \theta_{i}  + 1)\Big)\\       
+&\text{assume $u<1$}\\
+&\le J_{k+1} + \frac{1}{2} \sum_{i=1}^n \Big(2 u r_i  \nu (2x_m+ 3 u r_i  ) \Big)\\
+ &\le J_{k+1} + n \Big( 2 u r_m  \nu (2x_m+ 3 u r_m  ) \Big) \\       
+ \Delta J &\ge n \Big( 2 u r_m  \nu (2x_m+ 3 u r_m  ) \Big) \\   
+ \nu &\le \frac{ \Delta J }{n^2 2 u r_m (2x_m+ 3 u r_m  )}             
+\end{align*}
+
+
+
+By following $u$ without noise, 
+$J_{k+1} \le J_{k}$.  Thus the cost function is monotonically decreasing.  There does not always exist a control $u$ that will decrease $J$, but such occurrences are rare and require 
+%the numerator 
+\[0 = \sum_{i=1}^n r_i\left(x_{i}  \cos( \theta_{i})  +   y_{i}  \sin( \theta_{i})   \right).\]  We can repeat the analysis of \ref{sec:AsymptoticInfiniteEnsFeedbackControl},  but substitute finite summations for integrals, to show that the system is asymptotically stable
+%The denominator is always nonzero.
+%  Consider $n=2$ robots each at the same $(x,y) = (1,0)$ location with orientation $\theta_1 = 0, \theta_2 = \pi$.  However, after each turn command, the system state update matrix is unique and will eventually allow for a $u$ that decreases the function.
+% 
+%
+%proof: 
+%\todo{A simpler proof -- show for $n=2$ that a $r_i \cdot \delta \phi$ will cause a zero $u_k$ to be non zero?}
+%
+% Assume the contrary, that turning $\phi$ will not allow a $u$ that can decrease $J$.
+%
+%Let $0 = \sum_{i=1}^n r_i \left( x_{i}  \cos( \theta_{i})  +   y_{i}  \sin( \theta_{i})    \right)$.  
+%Then there does not exist a $u$ to decrease $J$ and $(x_{i,k},y_{i,k} ) = (x_{i,k+1},y_{i,k+1})$  
+%and assume that after turning $\phi$, there still does not exist a $u$ to decrease $J$, i.e.\ $0 = \sum_{i=1}^n r_i\left(x_{i}  \cos( \theta_{i} + r_i\phi )  +   y_{i}  \sin( \theta_{i} + r_i\phi)  \right)$. Then
+%\begin{align*}
+%0 = \sum_{i=1}^n r_i  \Big( &         x_{i} \left(  \cos( \theta_{i} + r_i\phi) -\cos( \theta_{i}) \right) \\
+%                                          &+y_{i} \left(   \sin( \theta_{i} + r_i\phi)  -\sin( \theta_{i}) \right) \Big)
+%\end{align*}
+
+%\subsection{Robustness Analysis}
+%
+%\todo{ insert figure showing error bounds.}
+
+
+\section{Algorithm 2: Minimizing the Maximum Error}\label{sec:AlgMaxError}
+Our second algorithm at every odd time step chooses $u$ to minimize the maximum error.
+\begin{align}
+J_2(q_k,k,u_k) &= \max_{i} \sqrt{x_{i,k+1}^2 + y_{i,k+1}^2}
+\label{eq:JmaxError}
+\end{align}
+where for odd time steps
+\begin{align*}
+x_{i,k+1} &= x_{i,k} + u_k \cdot r_i \cdot \cos( \theta_{i,k})\\
+y_{i,k+1} &= y_{i,k} + u_k \cdot r_i \cdot \sin( \theta_{i,k})\\
+\theta_{i,k+1} &= \theta_{i,k}
+\end{align*}
+and at even time steps
+\begin{align*}
+x_{i,k+1} &= x_{i,k} \\
+\theta_{i,k+1} &= \theta_{i,k} + r_i \cdot \phi
+\end{align*}
+
+
+
+ \begin{algorithm}                      % enter the algorithm environment
+\caption{\textsc{MinMaxError}}
+	\label{Alg:MinMaxError}                          % and a label for \ref{} commands later in the document
+\scriptsize{
+\begin{algorithmic}[1]
+	%\SetAlgoLined
+	\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\REQUIRE{$ [x_i,y_i,\theta$] and $r$ for all $i$ in robot ensemble \\
+
+$\mu>0$,  assume goal at $(0,0)$}
+	\ \\
+	\STATE $c = \underset{i}{\argmax} \sqrt{x_i ^2 + y_i ^2}$
+	\WHILE{ $\sqrt{x_c ^2 + y_c ^2}  > \mu$ }
+\STATE	$u \leftarrow - \dfrac{x_{c}  \cos\theta_{c}  +   y_{c}\sin \theta_{i}  }{  \cos\theta_{i}    + \sin\theta_{i,k} }$
+	\ \\
+	\STATE  $d \leftarrow \norm{x_c + u r_c \cos \theta_c, y_c + u r_c \sin\theta_c)}$
+	\FOR{ $i = 1$ to $n$}\label{alg:forLoopMinMaxErr}
+	\IF{ $i\neq c$}
+		\STATE $(x_*,y_*) \leftarrow (x_i + u r_i \cos \theta_i, y_i + u r_i \sin\theta_i)$ 
+		\IF{ $\norm{(x_*,y_*)} > d$}
+			\STATE $a \leftarrow r_c( cos^2\theta_c+ sin^2\theta_c)       - r_i^2( cos^2\theta_i +  \sin^2\theta_i)$
+			\STATE $b \leftarrow 2r_c(x_c  cos\theta_c +  y_c  sin\theta_c) - 2r_i(x_i  cos\theta_i +  y_i  \sin\theta_i)$
+			\STATE $c \leftarrow     x_c^2+y_c^2                           - (x_i^2+y_i^2)$
+   
+   
+			\STATE $u_1 = \frac{-b+\sqrt{b^2-4a c}}{2 a}$
+   			\STATE $u_2 = \frac{-b-\sqrt{b^2-4a c}}{2 a}$
+			\IF{$u_1 \in [0,u] $}
+				\IF{$u_2 \in [0,u] \cap  |u_1| < |u_2| $}
+					\STATE $u \leftarrow u_2$
+				\ELSE
+					\STATE $u \leftarrow u_1$
+				\ENDIF
+			\ELSE
+				\STATE $u \leftarrow u_2$
+			\ENDIF
+			\STATE  $d \leftarrow \norm{x_c + u r_c \cos \theta_c, y_c + u r_c \sin\theta_c)}$
+		\ENDIF
+	\ENDIF
+	\ENDFOR
+	\STATE  Apply $(u,0)$ to the ensemble for 1 unit of time
+	\STATE  Apply $(0,\phi)$  to the ensemble for 1 unit of time
+	\STATE  Measure $[x,y,\theta]$ state of ensemble	
+	\STATE $c = \underset{i}{\argmax} \sqrt{x_i ^2 + y_i ^2}$
+\ENDWHILE
+\end{algorithmic}}
+\end{algorithm}
+
+Note that $u$ is zero in line 3 whenever $\theta_c$ is perpendicular to the error vector $-(x_c,y_x)$.  We start with $u$ set to minimize the worst input.  The \textbf{for loop} on line   \ref{alg:forLoopMinMaxErr} checks to see if such a controller makes a different robot have a larger max error.  If it does, $u$ is decreased by solving a quadratic equation to see where these two robots are the same distance from the goal.  Note that in this algorithm the maximum error never increases, but that $u=0$ is more common.
+
+
+\subsection{Proof of Convergence}
+
+Without noise the cost function is monotonically decreasing: $J_{dec} = J_k - J_{k+1} = d \ge 0$.  Again, assume multiplicative, bounded noise model, where the noise is drawn from $n_x,n_y \in  [-\nu,\nu]$.
+
+If, without noise, the maximum error decreased by $d$, with worst-case noise it decreased only $d - \nu*r_m*u$.  For stability, we need $d - \nu*r_m*u \ge 0$, giving the condition
+\[\nu \le \frac{d}{r_m u}.\]
+
+
+
+%\subsection{Robustness Analysis}
+
+\section{Algorithm 3: Controlling Identical Robots}\label{sec:IdenRobots}
+
+%In 1949, Tudor toys introduced electric football to the world.  22 plastic players could be lined up on a metal playing field.  This field had a small counter-weighted electric motor bolted under the 50 yard line.  With the flip of a switch, the players would start moving erratically until the offensive player turned off the switch.  How would a robot play electric football?   The electric football game is uncontrollable -- but with the addition of another control input, it can be made controllable.  If we have two inputs 1: move forward and 2:  rotate in place stochastically, each electric football players could be steered to any x,y position with asymptotically decreasing error.  While the impact to the world of toys is hard to measure, the world of medicine is a realistic target.  Many types of cancer-fighting drugs are toxic as a function of their concentration with lethality above a certain threshold \todo{[Cite]}.  Micro robots have been designed that can carry small doses of toxins  \cite{Ghosh2009}. An ability to non-invasively gather large numbers of these robots at the site of a tumor and destroy the target without harming healthy tissue could be a significant improvement over surgical and chemo cancer treatments.
+%
+%
+%\begin{figure}[t]
+%\centering
+%\begin{overpic}[width=0.8\columnwidth]{tudor600}
+%\end{overpic}
+%\caption{ Electric football, a toy craze that sold some 40 million units.  An electric motor vibrates the metal field, causing plastic players to move randomly. Is such a system controllable?  Photo ref \url{http://www.miggle.com/products/tudor/}
+%}
+%\label{fig:tudor600}
+%\end{figure}
+
+ 
+ 
+ \begin{algorithm}                      % enter the algorithm environment
+\caption{\textsc{ScrambleAndGo}}
+	\label{Alg:ScrambleAndGo}                          % and a label for \ref{} commands later in the document
+\begin{algorithmic}[1]
+	%\SetAlgoLined
+	\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\REQUIRE{$\mu>0 ,[g_{x_i},g_{y_i},], [x_i,y_i,\theta$] for all $i$ in robot ensemble}
+	\ \\
+	\WHILE{ $\underset{i}{\max} \Big( (g_{x_i}-x_i )^2 + (g_{y_i}-y_i )^2 \Big)  > \mu$ }
+	%\ \\
+\STATE	\[u = - \sum_{i=1}^n \left({x_{i} \cdot \cos \theta_{i}  +   y_{i}\cdot \sin \theta_{i}  }  \right)\]
+	\ \\
+	\STATE  Apply $(u,0)$ to the ensemble for 1 unit of time
+	\STATE  \textsc{Scramble}: Command robots to each turn to a random orientation
+	\STATE  Measure $[x,y,\theta]$ state of ensemble	
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+In section \ref{sec:ProveControllabiltiy} we proved that a collection of identical kinematic unicycles is uncontrollable.  To make such a collection controllable, we need the new control primitive \textsc{Scramble}, that causes each unicycle to rotate in place independently to a random orientation.  For any such primitive, we have the state update equation
+\begin{align*}
+X_{k+1} &= X_k + B_k u_k,
+\end{align*}
+where 
+\begin{align*}
+B_k = \left[ \begin{array}{c c}
+\sin(\theta_{1,k}) & 0\\
+0 & \cos(\theta_{1,k})\\
+\vdots & \\
+\sin(\theta_{n,k}) & 0\\
+0 & \cos(\theta_{n,k})
+\end{array} \right]
+\end{align*}
+As long as $\mathbf{B} = [B_1, B_2,\dots,B_m]$ is full rank, the system is controllable with regard to position.  Note that if the rotation angles returned by \textsc{Scramble} are truly random real numbers, only $m = 2n$ rotations are necessary.  
+
+
+
+%More generally, any set of rotations $\Theta = [\theta_1,\theta_1,\ldots,\theta_m]$ with
+%\begin{align*}
+%\theta_k = \left[ \begin{array}{c}
+%\mod(\theta_{1,k},2\pi)\\
+%\ldots\\
+%\mod(\theta_{n,k},2\pi)\\
+%\end{array} \right]
+%\end{align*}
+% such that $\Theta$ is full rank  result in a controllable system.
+
+%Given such a primitive, We can generate an arbitrary
+%If $\mod(\theta_i,2\pi) \neq \mod(\theta_i,2\pi), \quad i,j \in [1,n]$
+
+
+%\subsection{Proof of Convergence}
+%
+%\subsection{Robustness Analysis}
+
+ \begin{figure}
+\centering
+\begin{overpic}[width=.55\columnwidth]{ScrambleDist}\end{overpic}
+\begin{overpic}[width=.55\columnwidth]{ScrambleErr}\end{overpic}
+\begin{overpic}[width=.55\columnwidth]{ScrambleU}\end{overpic}
+\caption{Simulation of \textsc{ScambleAndGo} for 25 kinematic unicycles.  Each unicycle is initialized randomly from a uniform distribution in $[-10,10]^2 \times [0,2\pi]$ and commanded according to Algorithm \ref{Alg:ScrambleAndGo} to steer toward $(g_x,g_y) = (0,0)$ for desired ending error $\mu = 10^{-2}$.  This is a decrease in error of 3 orders of magnitude.  Top: total distance travelled, middle:  $L_2$ error, bottom: control effort, each as a function of iteration.  Note that the control effort is never 0---there was always a non-zero velocity that decreased the average $L_2$ norm.  Note as well the exponential decrease in error.
+}
+\label{fig:SimScrambleAndGo}
+\end{figure}
+\section{Algorithm 4: Minimizing a Linear Program}\label{sec:AlgLinError}
+
+%\subsection{Robustness Analysis}
+
+%We solve this problem incrementally, first under the restriction that the forward velocity must be nonnegative: $ \{(0,1),(0,-1),(1,0)\}$. The \emph{Magmites} created by Frutiger et al. \cite{Frutiger2008} are one example of a robotic system that can only generate positive velocity, but can turn in any direction.  We will show that with this limited set of inputs we can generate macro primitives to move to $\{(0,1),(0,-1),(1,0),(-1,0)\}$.  These inputs scale linearly, allowing us to generate primitives to move to $\{(0,\Delta y),(0,-\Delta y),(\Delta x,0),(-\Delta x,0)\}$ for any $\Delta x, \Delta y \in \R^+$. Additionally, because these primitives leave the heading unchanged, these macro primitives commute, allowing us to reach any $x,y \in \R^2$ with at most two macro primitives.
+
+
+%\textcolor{red}{Show the equation for the Taylor Series, show for $\phi=\pi/2$ that the $a',b'$ are always positive,   Next section show that we can find $\phi$ values that are also always positive for $\Delta x = -1$, etc.}
+
+
+% \section{Positive Angular Velocity}\label{sec:PosAngVel}
+ 
+% Given $\mu>0$ and $(\Delta x,\Delta y)\in\R^{2}$, we need to find $\phi>0$ and $a\in\R^{k}$  for sufficiently large $k$ so that
+% \[
+%\abs{\Delta x - \sum_{j=0}^{k} a_{j}r\cos\left(r j\phi\right)} \leq \mu
+%\]
+%and
+%\[
+%\abs{\Delta y - \sum_{j=0}^{k} a_{j}r\sin\left(r j\phi\right)} \leq \mu
+%\]
+%for all $r\in[1-\delta,1+\delta]$.
+%
+%Note that primitives here will scale, but %unlike \ref{sec:PosLinVel} 
+%not commute since $\gamma$ is monotonically increasing.
+
+ 
+ 
+ Given $\mu>0$ and desired position change $(\Delta x,\Delta y)\in\R^{2}$ for the ensemble, we need to find $\phi>0$ and $a\in\R_+^{k}$  for sufficiently large $k$ so that
+ \[
+\abs{\Delta x - \sum_{j=0}^{k} a_{j}r \cos\left(r j\phi\right)} \leq \mu
+\]
+and
+\[
+\abs{\Delta y - \sum_{j=0}^{k} a_{j}r \sin\left(r j\phi\right)} \leq \mu
+\]
+for  $r = [r_1,\ldots,r_n]$.
+Note that primitives here will scale, but not commute since $\gamma$ is monotonically increasing.
+ 
+\subsection{ Numerical Algorithm for $\R^+$ Inputs}
+% As figs \ref{fig:EndingErr100prim1en2error} and  \ref{fig:Paths100prim1en2error} show, we can use numerical methods to find sequences of primitives that meet the control objectives of any $(\Delta x, \Delta y)$ and final error $\mu>0$.
+ 
+Given $r = [r_1,\ldots,r_n]$ starting positions $\Delta x ,\Delta y$,  solve the linear program  
+\begin{align*}
+\min_{x} f^Tx \text{ such that }  A\cdot x \le b 
+\end{align*}
+for $k$ primitives.
+
+\begin{align*}
+\text{Let } A &=
+\left[ \begin{array}{c|c c c c}
+0 & r_{1} & r_{1} \cos r_{1} 1 \phi & \dotsc & r_{1} \cos r_{1} k \phi \\
+\vdots  & \vdots & \vdots & & \vdots \\
+0 & r_{N} & r_{N} \cos r_{N} 1 \phi & \dotsc & r_{N} \cos r_{N} k \phi \\
+0 & r_{1} & r_{1} \sin r_{1} 1 \phi & \dotsc & r_{1} \sin r_{1} k \phi \\
+\vdots  & \vdots & \vdots & & \vdots \\
+0 & r_{N} & r_{N} \sin r_{N} 1 \phi & \dotsc & r_{N} \sin r_{N} k \phi \\ \hline
+0 & -r_{1} & -r_{1} \cos r_{1} 1 \phi & \dotsc & -r_{1} \cos r_{1} k \phi \\
+\vdots  & \vdots & \vdots & & \vdots \\
+0 & -r_{N} & -r_{N} \cos r_{N} 1 \phi & \dotsc & -r_{N} \cos r_{N} k \phi \\
+0 &- r_{1} & -r_{1} \sin r_{1} 1 \phi & \dotsc & -r_{1} \sin r_{1} k \phi \\
+\vdots  & \vdots & \vdots & & \vdots \\
+0 & -r_{N} & -r_{N} \sin r_{N} 1 \phi & \dotsc & -r_{N} \sin r_{N} k \phi \\ \hline
+-1 & 1        & 0 & \dotsc & 0\\
+-1 & 0       & 1 &  & 0\\
+\vdots  &        &  & \ddots & \\
+-1 & 0       & 0 & & 1\\ \hline
+0 & -1        & 0 & \dotsc  & 0\\
+0 & 0       & -1 & & 0\\
+\vdots  &        &  & \ddots & \\
+0 & 0       & 0 &  & -1\\
+\end{array} \right],\\
+b &= \left[ \begin{array}{c}
+\mu/2 + \Delta x \\
+\vdots   \\
+\mu/2 + \Delta x \\
+\mu/2 + \Delta y \\
+\vdots   \\
+\mu/2 + \Delta y \\ \hline
+\mu/2 - \Delta x \\
+\vdots   \\
+\mu/2 - \Delta x \\
+\mu/2 - \Delta y \\
+\vdots   \\
+\mu/2 - \Delta y \\ \hline
+ 0\\
+ 0\\
+ \vdots  \\
+0 \\\hline
+0\\
+0\\
+\vdots  \\
+0 \\
+\end{array} \right], \text{ and } f = \bigg[ 
+1\bigg| \overbrace{ 1 \dotsc 1 }^{k +1}
+ \bigg]^T
+\end{align*}
+
+
+\section{Results}\label{sec:Results}
+
+Figure \ref{fig:FiniteLyapunov} compares the Lyapnov function and state trajectories for a simulated system of 120 robots.  A corresponding video is in the attachments.  Figure \ref{fig:SimAlgs1to3} compares the three algorithms discussed in this chapter for identical initial conditions.
+
+ \begin{figure}
+\centering
+\begin{overpic}[width=.7\columnwidth]{FiniteLyapunovRoboticsIllinois}\end{overpic}
+\begin{overpic}[width=.7\columnwidth]{FiniteStateRoboticsIllinois}\end{overpic}
+\caption{\label{fig:FiniteLyapunov}
+Simulation results from applying the control law \ref{eq:LyapunovControlFunc} from chapter \ref{chap-extUnicycle}  and $\omega(t) = t$.  The top plot shows the the starting and ending positions and 8 state trajectories. The bottom plot shows the time evolution of the average state error.  
+}
+\end{figure}
+
+
+
+
+ \begin{figure}
+\centering
+\begin{overpic}[width=.55\columnwidth]{Comp3dist}\end{overpic}
+\begin{overpic}[width=.55\columnwidth]{Comp3err}\end{overpic}
+\begin{overpic}[width=.55\columnwidth]{Comp3us}\end{overpic}
+\caption{\label{fig:SimAlgs1to3}
+Simulation results from 3 trials each of 25 kinematic unicycles, initialized randomly from a uniform distribution in $[-10,10]^2 \times [0,2\pi]$,  commanded according to Algorithms 1-3 to steer toward $(g_x,g_y) = (0,0)$ for 500 iterations. Top: total distance travelled, middle:  $L_2$ error, bottom: control effort, each as a function of iteration.  Picking controls to minimize the average error is the least efficient, decreasing the maximum error the least, and has the highest control effort, but it is the only controller that is never 0.  Solving a linear program produces the best results and minimizing the maximum error falls between these two controllers.
+}
+\end{figure}
+
+%\section{Conclusion}\label{sec:Conc}
+ 
+
+
+%
+%\section{Receding Horizon Control}
+%For a finite collection of unicycles with unique wheel radii, we are trying to find the shortest path (minimum time control under velocity constraints) that brings them all within $\mu$ of a goal location from a given start configuration.  Often such problems have sensors and a closed loop solution should be no worse than an open-loop solution
+%\cite{Camacho1999}\cite{Kwon2005}
+
+
+
+
+
+
+

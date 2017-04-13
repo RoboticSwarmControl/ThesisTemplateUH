@@ -1,0 +1,88 @@
+
+% abstract for atb dissertation
+
+
+In this dissertation, we apply the framework of ensemble control theory to derive an approximate steering algorithm for two classical robotic systems---the nonholonomic unicycle and the plate-ball manipulator---in the presence of model perturbation that scales all inputs by an unknown but bounded constant.
+
+The basic idea is to maintain the set of all possible configurations and to select inputs that reduce the size of this set and drive it toward some goal configuration. The key insight is that the evolution of this set can be described by a family of control systems that depend continuously on the unknown constant. Ensemble control theory provides conditions under which it is possible to steer this entire family to a neighborhood of the goal configuration with a single open-loop input trajectory. For both the nonholonomic unicycle and the plate-ball manipulator, we show how to construct this trajectory using piecewise-constant inputs. We also validate our approach with hardware experiments, where the nonholonomic unicycle is a differential-drive robot with unknown wheel size, and the plate-ball manipulator is a planar motion stage that uses magnetic actuation to orient a sphere of unknown radius.
+
+We conclude by showing how the same framework can be applied to feedback control of multi-robot systems under the constraint that every robot receives exactly the same control input. We focus on the nonholonomic unicycle, instantiated in experiment by a collection of differential-drive robots. Assuming that each robot has a unique wheel size, we derive a globally asymptotically stabilizing feedback control policy. We show that this policy is robust to standard models of noise and scales to an arbitrary number of robots. These results suggest that our approach may have possible future application to control of micro- and nano-scale robotic systems, which are often subject to similar constraints.
+
+
+%%%%%%%% My version
+%%%%%%In this dissertation we apply ensemble control theory to control three robotic systems.  For each robotic system we prove the system is controllable, design a control policy and validate this control policy with hardware experiments.
+%%%%%%
+%%%%%%Our first robotic system is a nonholonomic unicycle with model perturbation that scales both the forward speed and the turning rate by an unknown but bounded constant.  We model the unicycle as an ensemble control system, show that this system is ensemble controllable, and derive an approximate steering algorithm that brings the unicycle to within an arbitrarily small neighborhood of any given Cartesian position. We apply our work to a differential-drive robot with unknown but bounded wheel radius, and validate our approach with hardware experiments.
+%%%%%%
+%%%%%%Our second robotic system is the classical plate-ball system under model perturbation that scales the ball radius by an unknown but bounded constant.  We present an algorithm for approximate steering and validate the algorithm with hardware experiments. To perform these experiments we introduce a new version of the plate-ball system based on magnetic actuation.  This system is easy to implement and, with our steering algorithm, enables simultaneous manipulation of multiple balls with different radii. 
+%%%%%%
+%%%%%%Our third robotic system is a collection of differential-drive robots under the constraint that every robot receives exactly the same control input. We derive a globally asymptotically stabilizing feedback control policy for this system. We begin by assuming that each robot has a different wheel size that uniquely scales each robot's forward speed and turning rate.  The resulting feedback policy is easy to implement, is robust to standard models of noise, and scales to an arbitrary number of robots. We validate this policy with hardware experiments. These results have possible future application to control of micro- and nano-scale robotic systems, which are often subject to similar constraints.
+
+%%%% PAPER 1 ABSTRACT
+%This paper considers the problem of steering a nonholonomic unicycle despite model perturbation that scales both the forward speed and the turning rate by an unknown but bounded constant. We model the unicycle as an ensemble control system, show that this system is ensemble controllable, and derive an approximate steering algorithm that brings the unicycle to within an arbitrarily small neighborhood of any given Cartesian position. We apply our work to a differential-drive robot with unknown but bounded wheel radius, and validate our approach with hardware experiments.
+
+%%%% PAPER 2 ABSTRACT
+%In this chapter we revisit the classical plate-ball system and prove this system remains controllable under model perturbation that scales the ball radius by an unknown but bounded constant. 
+%We present an algorithm for approximate steering and validate the algorithm with hardware experiments. To perform these experiments we introduce a new version of the plate-ball system based on magnetic actuation.  This system is easy to implement and, with our steering algorithm, enables simultaneous manipulation of multiple balls with different radii. 
+
+%%%% PAPER 3 ABSTRACT
+%In this chapter, we derive a globally asymptotically stabilizing feedback control policy for a collection of differential-drive robots under the constraint that every robot receives exactly the same control input. We begin by assuming that each robot has a slightly different wheel size, which scales each robot's forward speed and turning rate by a constant.  These constants may be found by offline or online calibration. The resulting feedback policy is easy to implement, is robust to standard models of noise, and scales to an arbitrary number (even a continuous ensemble) of robots. We validate this policy with hardware experiments, which additionally reveal that our feedback policy still works when the wheel sizes are unknown and even when the wheel sizes are all approximately identical. These results have possible future application to control of micro- and nano-scale robotic systems, which are often subject to similar constraints.
+
+
+%This dissertation considers the approximate steering problem for control-affine systems under unknown but bounded model perturbations.  The approach we take is to model the system as an ensemble control system, show that this system is ensemble controllable, and derive an approximate steering algorithm that brings the system to within an arbitrarily small neighborhood of any given goal configuration. The steering algorithm uses primitives designed by a series expansion about the perturbed parameter.  These primitives are composed of piecewise-constant control inputs.
+%  
+%  In our first case study we consider steering a nonholonomic unicycle to a neighborhood of any given Cartesian
+%position despite model perturbation that scales both the forward speed and the turning rate by an unknown but bounded constant. We apply our work to a differential-drive robot with unknown but bounded wheel radius, and validate our approach with hardware experiments.
+%
+% In our second case study we consider steering the orientation of a plate-ball system to any position orientation in $\R^2 \times SO(3)$ despite model perturbation that scale the radius by an unknown but bounded constant.  We apply our work to balls rolling on the horizontal plane. 
+% 
+%   As an extension to a very different domain, we show the same approach can be applied to the control of multi-robot systems.  We model these as ensemble control systems and derive open-loop and feedback controllers.
+%
+
+%%%%%%PROPOSAL
+%This dissertation proposal considers the approximate steering problem for control-affine systems under unknown but bounded model perturbations.  The approach we take is to model the system as an ensemble control system, show that this system is ensemble controllable, and derive an approximate steering algorithm that brings the system to within an arbitrarily small neighborhood of any given goal configuration. The steering algorithm uses primitives designed by a series expansion about the perturbed parameter.  These primitives are composed of piecewise-constant control inputs.
+%  
+%  In our first case study we consider steering a nonholonomic unicycle to a neighborhood of any given Cartesian
+%position despite model perturbation that scales both the forward speed and the turning rate by an unknown but bounded constant. We apply our work to a differential-drive robot with unknown but bounded wheel radius, and validate our approach with hardware experiments.
+%
+% In our second case study we consider steering the orientation of a ball-plate system to any position orientation in $\R^2 \times SO(3)$ despite model perturbation that scale the radius by an unknown but bounded constant.  We apply our work to spheres rolling on the plane. 
+% 
+%   As an extension to a very different domain, we show the same approach can be applied to the control of multi-robot systems.  We model these as ensemble control systems and derive open-loop and feedback controllers.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ %, and validate our work with hardware experiments.
+% orientation of a sphere despite model perturbation that scales the radius by an unknown but bounded constant.
+  %In our second case study we consider steering the orientation of a sphere despite model perturbation that scale the radius by an unknown but bounded constant.
+  
+
+  % modelled as ensemble .
+%  As an extension to a very different domain, we show the control of multi-robot systems can be modeled as ensemble control systems.
+
+
+
+
+
+
+%In micro-robotics  and manufacturing, there is often a large discrepancy between the number of intelligent controllers and the number of agents to be controlled.  In this dissertation we apply the tools of ensemble control theory to canonical robotic and part-orientation problems.  We consider the extreme case:  1 controller and $n$ dynamical systems, where $n$ may be uncountably infinite.  Steering these systems to desired states is complicated by model inaccuracies and process noise.
+%
+%In our first division, we consider the problem of steering a nonholonomic unicycle despite model perturbation that scales both the forward speed and the turning rate by an unknown but bounded constant. We model the unicycle as an ensemble control system, show that this system is ensemble controllable, and derive an approximate steering algorithm that brings the unicycle to within an arbitrarily small neighborhood of any given Cartesian position. We apply our work to a differential-drive robot with unknown but bounded wheel radius, and validate our approach with hardware experiments.  Of special concern for many micro-robots are closed-loop control laws for steering many robots.
+%% under actuator constraints.  
+%We provide asymptotic control laws robust to process noise and actuator constraints.
+%
+%In our second division, we consider the problem of steering the orientation of spheres using the same control for a range of sphere radii.  We model the set of spheres as an ensemble control system, show that this system is ensemble controllable, and derive an approximate steering algorithm that bring the spheres to within an arbitrarily small neighborhood of any given orientation. We validate our approach with hardware experiments.

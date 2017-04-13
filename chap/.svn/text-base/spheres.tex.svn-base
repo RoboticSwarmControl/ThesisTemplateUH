@@ -1,0 +1,1203 @@
+% Thesis  
+% IDEAS:  always give file names for data used to create the thesis.
+
+
+
+\chapter[Case Study 2: \\  Approximate Steering of Ball-Plate System]{Case Study 2: Approximate Steering of Ball-Plate System}
+\label{chap-spheres}
+\begin{figure}[htb]
+	\begin{center}
+	\begin{overpic}[width=.18\columnwidth]{SphereStart}\end{overpic}
+	\begin{overpic}[width=.12\columnwidth]{SphereStart}\end{overpic}
+	\begin{overpic}[width=.06\columnwidth]{SphereStart}\end{overpic}
+	\begin{overpic}[width=.2\columnwidth]{rotateArrow}\end{overpic}
+	\begin{overpic}[width=.18\columnwidth]{SphereEnd}\end{overpic}
+	\begin{overpic}[width=.12\columnwidth]{SphereEnd}\end{overpic}
+	\begin{overpic}[width=.06\columnwidth]{SphereEnd}\end{overpic}
+	\end{center}
+	\caption{\label{fig:SphereStartEnd} This chapter investigates paths constructed so that a sphere rolling along them will experience a desired net rotation with low error, despite variations in sphere radius.  An example problem is to rotate spheres with radius $r \in [0.5,1.5]$ by $\pi$ about their $y$-axis.}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Problem Statement}\label{sec:ProblemStatement}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+In this chapter we apply the framework of ensemble control theory \cite{Brockett1999,Khaneja2000,Li2006,Li2006b,Li2006a,Li2007,Li2009,Li2011,Ruths2011,Ruths2011a,Beauchard2010,Beauchard2010a} to derive an approximate
+%open-loop
+steering algorithm for a sphere rolling on the plane in the presence of model perturbation that scales the sphere radius by an unknown but bounded constant. The basic idea, similar to early work on sensorless manipulation \cite{Erdmann1988}, is to maintain the set of all possible configurations of the sphere and to select inputs that ultimately reduce the size of this set about some goal configuration. The key insight is that the evolution of this set can be described by a family of control systems that depend continuously on the unknown constant. Ensemble control theory provides conditions under which it is possible to steer this entire family to a neighborhood of the goal configuration with a single open-loop input trajectory. These conditions mimic classical tests of nonlinear controllability like
+%Chow's Theorem (e.g., see \cite[Chap. 7]{Murray1994})
+the Lie algebra rank condition~\cite{Sussmann1972}
+but involve approximations by repeated Lie bracketing that are reminiscent of seminal work on steering nonholonomic systems by Lafferriere and Sussman~\cite{Lafferriere1993}.
+
+
+%why we care:  
+%In this chapter we consider the problem of steering a sphere to a desired configuration despite model perturbations that scale the sphere diameter by an unknown but bounded constant.
+Sphere manipulation through rolling is a canonical example of a non-flat nonholonomic mechanism.     
+An example rotation of $\pi$ radians is shown in Fig \ref{fig:SphereStartEnd}.  We focus on the sphere because it is a ubiquitous elementary component in manufacturing.  
+%In this chapter, we investigate open-loop controllers that can reorient spheres despite variation in sphere radius.
+%Given a desired change in orientation $R_\Delta(\epsilon)$, where $R_\Delta$  may or may not depend on the actual radius $\frac{1}{\epsilon}$ and an error $\mu$, design   %DONE: once for all if radius is r/epsilon!
+Specifically, we investigate sensor-less open-loop control for spheres that roll without slipping, as in Fig. \ref{fig:SphereEnsCont}.  The configuration space for any sphere is
+$q=(x,y,R)$, where $q$ comes from the configuration space $\Cspace = \R^2 \times SO(3)$.  The control inputs $(u,v)$ are the speeds of rolling in the $x$ and $y$ directions.  
+
+  \begin{figure}[h]
+      \centering
+      \begin{overpic}[width=.5\columnwidth]{SphereEnsCont}
+				\put(72,47){$\epsilon r$ }
+				\put(75,25){$x$ }
+				\put(18,10){$y$ }
+	\end{overpic}
+      \caption{\label{fig:SphereEnsCont}
+A sphere rolling on the plane with unknown perturbation that scales the radius.  This chapter models such a sphere as an ensemble control system, proves that it is controllable, and derives a motion planning algorithm that steers the sphere to within an arbitrarily small neighborhood of any desired rotation in SO(3).}
+   \end{figure} 
+
+%\item {\bf restrict} $(u,v)\in\Uspace$ to constraint set $\Uspace\subset\R^{2}$
+The kinematics for a radius $r \epsilon $ sphere are:
+\begin{align}
+\frac{d x(t,\epsilon)}{dt} &= u, \quad \frac{d y(t,\epsilon)}{dt} = v,\nonumber\\
+\frac{d R(t,\epsilon)}{dt} &= R(t) \frac{1}{\epsilon r}\left( \Omega_x u + \Omega_y v \right)\label{eqn:EnsSphereSys}\\ 
+\text{where } 
+\Omega_x &= \begin{bmatrix}
+0 &0 & 0 \\
+0 &0 &-1 \\
+0 &1 & 0 \\
+\end{bmatrix},  \quad
+\Omega_y = \begin{bmatrix}
+0 &0 & 1 \\
+0 &0 & 0 \\
+-1&0 & 0 \\
+\end{bmatrix} \nonumber
+\end{align}
+
+Given orientations $R(0,\epsilon)$, $R_{goal}(\epsilon)\in SO(3)$, $\epsilon \in [1-\delta, 1+\delta]$ for $0 \leq \delta < 1$, and $\mu>0$, where both the initial and goal orientations may depend on the radius $r \epsilon$, find open-loop inputs
+\[
+\big(u(t),v(t)\big) \colon [0,T] \to \Uspace
+\]
+for free final time $T$ that result in 
+\begin{align}
+%J = \int_{1-\delta}^{1+\delta}\operatorname{dist}\!\left(R(T,\epsilon),R_{goal}\right)d\epsilon \leq\mu
+\operatorname{dist}\!\left(R(T,\epsilon),R_{goal}\right)  \leq\mu \qquad \forall \epsilon \in [1-\delta, 1+\delta]
+\label{eqn:Jtrace1} 
+\end{align} 
+%Here $\norm{R_A,R_B}$ is $3-\trace{R_A R_B^{-1}}$.
+If such inputs always exist then \eqref{eqn:EnsSphereSys} is {\em ensemble controllable}.
+
+\section{Related Work}
+Reorientation is a primary process in automation that prepares a part for measuring, marking and/or machining.  Spheres are a fundamental component used in many other designs.  
+While many automation processes use highly uniform spheres (i.e., even  low-precision ball-bearings are round within $\pm$0.005 inches \cite{Eschmann1985}),    other processes do not:  microspheres (i.e.~ factor of 4 variation in radius between $90^{th}$ and $50^{th}$ percentile microspheres  \cite{Energy2010}), organic products (i.e. large variation in oranges \cite{Bain1958}), and inorganic grown spheres (i.e. $\pm$20\% variation in cultured pearls \cite{Alagarswami1974}).
+
+\subsection{ Sphere Manipulation} %Related Work: Sphere Manipulation
+Manipulation of spherical objects by rolling has been investigated in depth by members of the math, control, and robotic-manipulation community. 
+
+ This research can be traced to Brocket and Dai who analyzed an approximation of the problem and determined the optimal controller for this approximation\cite{Brockett1993}.  
+Jurdjevic determined the optimal shortest length paths, showing that the optimal solution curve minimizes the integral of the geodesic curvature and that these curves are solutions to Euler's elastica problem\cite{Jurdjevic1993}.  Li and Canny provided a symbolic algorithm for steering the system \cite{Li1990},  Marigo gave a numeric algorithm \cite{Marigo2000},
+and Oriolo and Vendittelli presented an iterative approach for stabilizing the ball-plate system \cite{Oriolo2005}.
+Robotic ball-plate systems solutions have been implemented in several robotic systems \cite{Marigo2000, Bicchi1995,Bicchi1995a}. 
+Choudhury and Lynch showed that a single degree of freedom manipulator was sufficient for orienting the sphere.  They designed a successful experiment consisting of an elliptical bowl mounted on top of a linear motor with the bowl primary axis oriented 45 degrees from the linear motor orientation \cite{Choudhury2001}.
+This problem has produced several  practical stabilizing controllers \cite{Date 2004,Morin2008, Casagrande2009}.
+
+Svinin and Hosoe extended the problem for ball-plate systems with limited contact area \cite{Svinin2008,Svinin2008a}.  This enables manipulation of non-spherical objects with spherical portions.
+
+Manipulation through rolling is also of interest to the robotic manipulation community for modeling grasps with spherical finger tips \cite{Montana1988,Bicchi1995a,Marigo2000,Murray1994,Nakamura1997}.
+
+ 
+\subsection{Ensemble Control of Bloch Equations}%Related Work: ensemble control}
+We are motivated by the work on \emph{ensemble control} in
+\cite{Li2006,Li2006a,Li2006b,Li2007,Li2011}.  These works studied the controllability properties of the \emph{Bloch equations}, a unit vector in $\R^3$.  The sphere, which moves in $\R \times SO(3)$ adds both position and the full rotation matrix to the problem.
+
+
+
+The Bloch equations describe the evolution of the magnetization vector of an atom under the influence of external magnetic fields.  This problem is difficult due to inhomogeneity in the external magnetic field, and dispersion in the spin angular frequency of individual atoms.  Though the magnetization vector is a unit-magnitude vector in $\R^3$, the evolution is most easily described in SO(3).  We can often apply work designed for the Bloch equations to rolling sphere problems.
+
+Many solutions have been proposed for controlling the orientation of magnetization vector. 
+
+Jr-Shin Li and Khaneja \cite{Li2006,Li2009}  approximated $\exp\{\theta(\epsilon)\Sigma_x\}$ by synthesizing $\exp\{P(\epsilon)\Sigma_x\}$, where $P(\epsilon)$ is a polynomial of suitable degree $n$ such that $\norm{\theta(\epsilon)-P(\epsilon)} \le \mu$ for all $\epsilon$.
+\cite{Li2006}  also considered bounded controls  $\abs{u},\abs{v} \le b$.  For rolling spheres, our path segments may be arbitrarily long, so we do not worry about bounded controls.  %Indeed, in application errors due to process noise are worse at turns than straight line segments.
+
+Beachard et al.~\cite{Beauchard2010} provided two solutions to steering the Block equations.  They showed such a system is approximately controllable in finite time with unbounded controls, and approximately controllable in infinite time with bounded controls.  In \cite{Beauchard2010a}, Beachard et al.\ extend their work to design a feedback controller for the Bloch equations These solutions depend on the presence of dispersion in the Larmor frequency. For spheres, this term would correspond to a unknown, bounded, constant rotation about the sphere $z$-axis. %Explain methods   
+
+
+\subsection{Sphere Controllability with Input Constraints}
+       % Why we care about constrained control
+       Several mechanisms for orienting spheres appear in robotics labs and in journal articles \cite{Jurdjevic1993,Casagrande2009,Date2004,Svinin2008}.  Most of these assume a flat supporting surface that supports the ball, and a horizontal plate that can be lowered onto the ball and actuated in the two-axes ($x$ and $y$) of the horizontal plane to roll the ball on the surface.  This requires two precision linear actuators for the $x$ and $y$ movement and a third, perhaps passive actuator to bring the top plate into contact with the ball. Choudhury and Lynch demonstrated an ingenious device that replaced the two-DOF flat stage with an elliptical bowl platform mounted at a 45 degree yaw on a 1DOF linear actuator \cite{Choudhury2001}.  By designing velocity profiles and re-planing after each movement, they could reorient a sphere with a single actuator.
+       
+        An industrial process that is required to apply the same rotation to every sphere it acts on does not require multiple actuators. We propose a solution that requires only a single, binary valued actuator---and yet is robust to large-scale variation of the sphere radius.  Because the system does repetitive work, we can encode the solution---an open loop path---by engraving the path into the plate.  Then, by tilting the plate, we can allow gravity or a similar attractive field move the sphere from the starting to final configuration.  
+\begin{figure}%[htb]
+	\begin{center}
+		\begin{overpic}[width=.49\columnwidth]{CongreveClock}
+		\put(60,36){{\LARGE$\longleftarrow$} \quad steel ball}
+		\end{overpic}
+	\end{center}
+	\caption{\label{fig:CongreveClock}A Congreve clock, from http://www.modelworks-int.com.  The steel ball rolling along the inclined path substitutes for a pendulum as the primary timekeeper. Once the ball strikes a detent at either end of the path, the tray tilts and the ball reverses down the path.}
+\end{figure}
+This solution is similar in appearance to the Congreve clock, \cite{Wilding1976,congreveClock}, see Fig \ref{fig:CongreveClock}.  The Congreve clock is a time-keeping mechanism that uses a ball rolling along a zigzag path inscribed on a metal tray instead of a pendulum.  The zigzag path is designed so that the ball takes 30 seconds to roll down the slope from the start to the finish.  When it reaches the finish, it strikes a detent which increments the clock and tips the tray so that the finish is now higher than the start and the ball again rolls for 30 seconds, striking a detent at the other end and tilting the tray back.  The process repeats with a total period of one minute.  %to have a period of 30 seconds
+
+%An input contraint \cite{Jerzy1996,Klamka2000,Jerzy2005} 
+%\subsection{Constrained Controllability}
+Klamka examines infinite dimensional systems with control values in a convex and closed cone with vertex at zero, e.g. $(u(t) \ge 0,v(t) \ge 0)$ in   \cite{Jerzy1996,Klamka2000}.  Let $U_0 \subset U$ be such a constrained control. In \cite{Klamka2000},  Klamka produces sufficient conditions for approximate controllability of infinite dimensional systems under constrained control
+       \[U_{ad} = L_{\inf}\left([0,T],U_0\right),\]
+       but these results require that the linearized system be controllable.  
+       
+%In this chapter we will examine constrained controllability.  Next we will show that a single ball is controllable with constrained inputs and discuss complications that arise with ensemble control of spheres due to noncommutativity of the inputs.  To solve this problem, we take an algorithm originally proposed for the Bloch equations and augment it for constrained controllability.  We demonstrate control solutions, and introduce a numeric optimization algorithm.
+       
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%       
+\section{Analysis of Controllability}\label{sec:AnalysisOfControllability}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{One Sphere}
+Consider the sphere on a plane that rolls without slipping.  Moving in the $y$ direction causes the sphere to rotate about the $x$-axis and moving in the $x$ direction rotates the sphere about the $y$-axis. Such a sphere has an $x,y$ location and an orientation in $SO(3)$.  We describe its configuration by $g = (x,y,R)$ and its configuration space\ $\mathcal{G} = \R^2 \times SO(3)$.  The differential system is
+\begin{align}
+\frac{d \,x(t)}{dt} &= u, \quad \frac{d \,y(t)}{dt} = v,\nonumber \\
+\frac{d \,R(t)}{dt} &= R(t) \begin{bmatrix}
+0 &0 & -u/r \\
+0 &0 & v/r\\
+u/r&-v/r & 0 \\
+\end{bmatrix} 
+\label{eqn:OneSphereSys}
+\end{align}
+Here $R(t)$ is the rotation matrix in $SO(3)$, $u, v$ are the control functions and $r$ is the sphere radius.  
+Given  $\qstart = \left(x(0),y(0),R(0)\right)$ and  $ \qgoal= \left(x(T),y(T),R(T)\right)$, $\qstart ,\qgoal\in\Cspace $ and $\mu>0$, the approximate steering problem 
+is to find open-loop inputs
+\[
+\left(u(t),v(t)\right) \colon [0,T] \to \Uspace
+\]
+that result in $q(0)=\qstart$ and $\norm{q(T)-\qgoal}\leq\mu$
+%minimize $\frac{1}{2}\int_0^T\left(u^2+v^2\right)dt$ over all possible solution curves of \eqref{eqn:OneSphereSys} satisfying the boundary constraints $g_{start} = \left(x(0),y(0),R(0)\right)$ and  $ g_{goal} = \left(x(T),y(T),R(T)\right)$, $g_{start},g_{goal} \in \mathcal{G} $.  This formulation uses the velocity of the center of the ball, $\left[u,v\right]$ as control inputs.  
+   Depending on the nature of the problem, the inputs might be subject to minimum turning radius and the constraint $g(t) \in \Cspace_{free}$ to consider collision avoidance.
+   If such inputs always exist then we say that \eqref{eq:one} is {\em approximately controllable}.
+
+
+
+ 
+% \begin{align*}
+%R_x(\alpha)&= \begin{bmatrix}
+%1 &0 &0 \\
+%0 &\cos \alpha &-\sin \alpha \\
+%0 &\sin \alpha & \cos \alpha \\
+%\end{bmatrix}, \\
+%R_y(\beta)&= \begin{bmatrix}
+%\cos \beta &0 &\sin \beta \\
+%0& 1 &0 \\
+%-\sin \beta &0 &\cos \beta \\
+%\end{bmatrix}, \\
+%R_z(\theta)&= \begin{bmatrix}
+%\cos \theta &-\sin \theta &0 \\
+%\sin \theta &\cos \theta &0\\
+%0 &0 &1\\
+%\end{bmatrix}.
+%\end{align*}
+
+ 
+
+\subsection{Ensemble Control of Spheres}
+\begin{figure}%[htb]
+	\begin{center}
+
+\begin{overpic}[width=.49\columnwidth]{ReorientSpheresRampRollensTip000050}\end{overpic}
+\begin{overpic}[width=.49\columnwidth]{ReorientSpheresRampRollensTip000420}\end{overpic}\\
+\begin{overpic}[width=.49\columnwidth]{ReorientSpheresRampRollensTip000521}\end{overpic}
+\begin{overpic}[width=.49\columnwidth]{ReorientSpheresRampRollensTip000936}\end{overpic}
+%\begin{overpic}[width=.19\columnwidth]{ReorientSpheresRampRollensTip001056}\end{overpic}
+	%	\begin{overpic}[width=.49\columnwidth]{SphereSimMid}\end{overpic}
+	%	\begin{overpic}[width=.49\columnwidth]{SphereSimEnd}\end{overpic}
+	\end{center}
+	\label{fig:9sphereSim}
+	\caption{ Left to right, top to bottom: nine spheres, with radius $[0.5,\ldots,1.5]$ roll down identical grooves, shown in cyan.  All spheres finish with a net rotation of $\approx\pi$ about their $y$-axis.  This rotation is reversible. By tilting the tray back up, the spheres return to their original position and orientation.}
+\end{figure}
+We will solve this motion planning problem, but under a model perturbation that scales the sphere diameter by some unknown, bounded constant, i.e.  $r_{actual} = r \epsilon$, $\epsilon \in [1-\delta,1+\delta]$.  However, rather than try to steer a single sphere governed by the perturbed kinematic model, our approach is to steer an uncountably infinite collection of spheres parameterized by $\epsilon$, each governed by the exact kinematic model  (\eqref{eqn:EnsSphereSys}, repeated for convenience)
+\begin{align}
+\frac{d \,x(t,\epsilon)}{dt} &= u, \quad \frac{d \,y(t,\epsilon)}{dt} = v,\nonumber\\
+\frac{d \,R(t,\epsilon)}{dt} &= R(t,\epsilon) \frac{1}{r \epsilon}\begin{bmatrix}
+0 &0 & -u  \\
+0 &0 & v \\
+u  &-v   & 0 \\
+\end{bmatrix} 
+\label{eqn:EnsSphereSys}
+\end{align}
+
+Following the terminology introduced by recent work in control theory \cite{Li2006,Li2006a,Li2006b,Li2007,Li2011,Becker2010}, we call this fictitious collection of spheres an \emph{ensemble} and call the model \eqref{eqn:EnsSphereSys} an \emph{ensemble control system}.  The idea is that if we can find  open-loop inputs $u(t)$ and $v(t)$ that result in $q(0,\epsilon) = \qstart$ and  $\norm{q(T,\epsilon) - \qgoal} \le \mu$ for all $\epsilon  \in [1-\delta,1+\delta]$, for arbitrary $\mu > 0$, then we can certainly guarantee that the actual sphere, which corresponds to one particular value of $\epsilon$, will be steered from the start to the goal.
+
+Any desired rotation $A$ can be parameterized by the rotations $\alpha,\beta, \gamma$ about the world $x$-axis, $z$-axis and then $x$-axis.
+
+\[ A = R_x(\alpha)R_z(\beta)R_x(\gamma) \]
+where
+  \begin{equation*}
+  R_x(\theta) =
+  \begin{bmatrix}
+ 1 & 0 & 0 \\
+ 0 & c_{\theta} & -s_{\theta} \\
+ 0 & s_{\theta } & c_{\theta}
+\end{bmatrix},
+\,
+R_y(\theta) =
+\begin{bmatrix}
+ c_{\theta} & 0 & s_{\theta} \\
+ 0 & 1 & 0 \\
+ -s_{\theta} & 0 & c_{\theta}
+\end{bmatrix},
+\,
+R_z(\theta) =
+\begin{bmatrix}
+ c_{\theta} & -s_{\theta} & 0 \\
+ s_{\theta} & c_{\theta} & 0 \\
+ 0 & 0 & 1
+\end{bmatrix}.
+\end{equation*}
+To control the ensemble, it is necessary to construct the desired rotations $\phi_1(\epsilon) = R_x(\alpha)$, $\phi_2(\epsilon) = R_y(\beta)$ and $\phi_3(\epsilon) = R_x(\gamma)$.
+
+%Analysis of an ensemble
+For small time $dt$, by rolling clockwise in a small square pattern on the plane, we can generate movement about the $z$-axis.
+\begin{align*}
+P_1(dt) &= \exp\{\frac{-1}{\epsilon} \sqrt{dt} \Omega_y\}
+  		    \exp\{\frac{-1}{\epsilon} \sqrt{dt} \Omega_x\}  
+		     \exp\{\frac{1}{\epsilon} \sqrt{dt} \Omega_y\}  
+		      \exp\{\frac{1}{\epsilon} \sqrt{dt} \Omega_x\} \\ 
+	  &\approx  I + \epsilon^{-2} dt \Omega_z\\
+	  &=  \exp\{ \epsilon^{-2} dt  \Omega_z\}
+	  \end{align*}
+The bracket generates the previously restricted motion about the $z$-axis.	  That is $[ \epsilon^{-1}\Omega_x,\epsilon^{-1}\Omega_y] = \epsilon^{-2}\Omega_z$.
+ Here $\Omega_x,\Omega_y,\Omega_z,$ are  the differential inputs
+ \begin{align*}
+\Omega_x = \begin{bmatrix}
+0 &0 & 0 \\
+0 &0 &-1 \\
+0 &1 & 0 \\
+\end{bmatrix},  \qquad
+\Omega_y = \begin{bmatrix}
+0 &0 & 1 \\
+0 &0 & 0 \\
+-1&0 & 0 \\
+\end{bmatrix}\qquad
+\Omega_z = \begin{bmatrix}
+0 &-1 & 0 \\
+1 &0 & 0 \\
+0 &0 & 0 \\
+\end{bmatrix}. 
+ \end{align*}
+ %This generates the rotation, to first order,
+% \[\dot{R}(t,\epsilon) = \frac{1}{\epsilon}[ u \Omega_y + v \Omega_x ] R(t,\epsilon).\]
+%\[R = \exp\{
+ %\[M(t,\epsilon) = R M(0,\epsilon) \]
+%\subsection{Analysis of an ensemble}
+We take further Lie brackets to find new control vector fields:
+%\frac{-1}{\epsilon} \Omega_y \cdot \frac{-1}{\epsilon}\Omega_x \cdot  \frac{1}{\epsilon}\Omega_y \cdot \frac{1}{\epsilon}\Omega_x\\
+\begin{align*}
+\text{ad}_{\frac{1}{\epsilon}\Omega_y} \left(\frac{1}{\epsilon}\Omega_x\right) &= \left[ \frac{1}{\epsilon} \Omega_y, \frac{1}{\epsilon} \Omega_x\right] &=& 
+ \begin{bmatrix}
+0 &\epsilon^{-2} & 0 \\
+-\epsilon^{-2} &0 & 0 \\
+0&0 & 0 \\
+\end{bmatrix} \\
+& 	&=& -\epsilon^{-2} \Omega_z\\
+\text{ad}_{\frac{1}{\epsilon}\Omega_y}^2 \left(\epsilon^{-1}\Omega_x\right) &= \left[\frac{1}{\epsilon} \Omega_y \left[ \frac{1}{\epsilon} \Omega_y, \frac{1}{\epsilon} \Omega_x\right] \right] &=& -\epsilon^{-3}\Omega_x\\
+\text{ad}_{\frac{1}{\epsilon}\Omega_y}^3 \left(\epsilon^{-1}\Omega_x\right) &= \left[\frac{1}{\epsilon} \Omega_y \left[\frac{1}{\epsilon} \Omega_y \left[ \frac{1}{\epsilon} \Omega_y, \frac{1}{\epsilon} \Omega_x\right] \right]\right]&=& \epsilon^{-4}\Omega_z\\
+&\vdots& &\\
+\text{ad}_{\frac{1}{\epsilon}\Omega_y}^{2k-1} \left(\frac{1}{\epsilon}\Omega_x\right) &= -1^{k} \epsilon^{-2k+1}\Omega_z &&\\
+\text{ad}_{\frac{1}{\epsilon}\Omega_y}^{2k} \left(\frac{1}{\epsilon}\Omega_x\right) &= -1^{k} \epsilon^{-2k}\Omega_x &&\\
+\end{align*}   % the adjoint
+
+By successive Lie brackets, we can synthesize terms of the form $\{\epsilon^{-2k+1}\Omega_z\}$ and $\{\epsilon^{-2k}\Omega_x\}$.  With these terms as generators, we can approximate the rotation
+\[\exp\left\{\sum_{k=0}^m  a_k \epsilon^{-2k}\Omega_x \right\},\]   where  the order $m$ and the coefficients $a_k$ can be selected such that
+\[ \norm{\alpha - \sum_{k=0}^m  a_k \epsilon^{-2k} } \le \mu, \quad \forall \epsilon\in[1-\delta,1+\delta], \]
+letting us match a desired rotation $\exp\{\alpha \Omega_x\}$ to arbitrary accuracy.
+A similar rotation can be generated about $\Omega_z$ to any desired accuracy.
+
+
+%An additional goal may be to minimize  
+%\begin{align}
+%\frac{1}{2}\int_0^T\left(u^2+v^2\right)dt
+%\label{eqn:EnsSphereOpt}
+%\end{align}
+%over all possible solution curves of \eqref{eqn:EnsSphereSys} under the constraint $\mu$.
+%%that  
+%%\[\norm{g(T,\epsilon) - g_{goal} }
+%%\le \mu, \quad \forall \epsilon  \in [1-\delta,1+\delta] \text{ for some }\mu > 0.  
+%% \]
+%If we want the sphere rolling to be driven by gravity, it would be convenient to constrain  $\left[u,v\right] \in \R^+$.  %Section \ref{sec:Mechanics}  considers controlling the orientation of the ensemble under this constraint.
+%%A solution to \eqref{eqn:EnsSphereOpt} is not included in this note.   
+%A proof of controllability and an algorithm for steering an ensemble toward  a goal orientation as a function of $\epsilon$ in $SO(3), \mathbf{R}(\epsilon)_{goal}$ is given in  \cite[section III-A]{Li2009}.  Interestingly, this algorithm is in-place such that $\Delta x = \Delta y = 0$.  Therefore, to get to a goal $[x,y,\mathbf{R} _{goal}]\in \R^2\times SO(3)$ requires only first rolling about the world $y$-axis to the desired $x$ position, followed by a roll about the world $x$-axis to the desired $y$ position.  These two movements generate some rotation $\mathbf{R}(\epsilon)_{x,y}$.  Since the algorithm in III-A of \cite{Li2009} is in-place, we can apply it to generate the rotation $\left(\mathbf{R}(\epsilon)_{x,y}\right)^{-1}\mathbf{R}(\epsilon)_{goal}$ and we have the full solution.    Note that a different solution based on Fourier coefficients is given by Pryor in \cite{Pryor2007,Pryor2007a}. Neither of these feasible solutions is proven to be optimal. 
+%
+
+
+       
+       % 1 ball can be steered with positive inputs
+  \subsection{Non-negative control of a single sphere}
+  
+  A single sphere can be rolled to any desired orientation through only positive inputs.  Consider a sphere on an inclined plane with a coordinate frame defined so that gravity pulls in the $[x,y]^T = [1,1]^T$ direction.  Any rotation can be generated by rolling down a path with at most 3 segments.  Let $A$ be a desired rotation matrix in SO(3).  The rotation $R_x(\alpha)R_y(\beta)R_x(\gamma)$ spans SO(3).%,  where these rotations are defined as
+  
+%  \begin{equation}
+%  R_x(\phi) =
+%  \begin{bmatrix}
+% 1 & 0 & 0 \\
+% 0 & c_{\phi} & -s_{\phi} \\
+% 0 & s_{\phi } & c_{\phi}
+%\end{bmatrix},
+%\,
+%R_y(\theta) =
+%\begin{bmatrix}
+% c_{\theta} & 0 & s_{\theta} \\
+% 0 & 1 & 0 \\
+% -s_{\theta} & 0 & c_{\theta}
+%\end{bmatrix},
+%\,
+%R_z(\psi) =
+%\begin{bmatrix}
+% c_{\psi} & -s_{\psi} & 0 \\
+% s_{\psi} & c_{\psi} & 0 \\
+% 0 & 0 & 1
+%\end{bmatrix}.
+%\end{equation}
+
+Given an $A$, as in \eqref{eq:RotationMatrixFromXYX} , we can find $\alpha, \beta, \gamma$ such that $R_x(\alpha)R_y(\beta)R_x(\gamma) = A$.   Algorithm  \ref{alg:Roll1sphere}   is one way to recover the angles $\alpha, \beta, \gamma$.
+
+\begin{equation}
+A = \begin{bmatrix}
+ c_{\beta} & s_{\beta} s_{\gamma} & c_{\gamma} s_{\beta} \\
+ s_{\alpha} s_{\beta} & c_{\alpha} c_{\gamma}-c_{\beta} s_{\alpha} s_{\gamma} & -c_{\beta} c_{\gamma} s_{\alpha}-c_{\alpha} s_{\gamma} \\
+ -c_{\alpha} s_{\beta} & c_{\gamma} s_{\alpha} +c_{\alpha} c_{\beta} s_{\gamma} & c_{\alpha} c_{\beta} c_{\gamma}-s_{\alpha} s_{\gamma}
+\label{eq:RotationMatrixFromXYX}
+\end{bmatrix}
+\end{equation}
+
+\begin{algorithm}  
+\caption{Rolling A Single Sphere}          % give the algorithm a caption
+\label{alg:Roll1sphere}                           % and a label for \ref{} commands later in the document
+  \begin{algorithmic}[1]
+	%\SetAlgoLined
+	\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\REQUIRE $A$, desired $3\times 3$ rotation matrix 
+\IF{ $A_{1,1} == 0$}
+	\STATE $\alpha = -\arccos(A_{3,1})$
+	\STATE $\beta = \pi/2$
+	\STATE $\gamma = \arccos(A_{1,2})$
+\ELSE
+        \STATE $\alpha = -\arctan(A_{2,1},A_{1,3})$
+	\STATE $\beta = \arccos(A_{1,1})$
+	\STATE $\gamma = \arctan(A_{1,2},A_{3,1})$
+\ENDIF
+	\end{algorithmic}
+\end{algorithm}
+
+Under the influence of gravity, negative values for $\alpha, \beta,$  and $\gamma$ are unrealizable.  Because these rotations are in $SO(3)$, we can transform them to be positive using algorithm \ref{alg:Roll1spherePos}.  An illustration of this identity is given in Fig. \ref{EquivalentRollingPaths}. 
+
+\begin{algorithm}  
+\caption{Rolling A Single Sphere: Positive Inputs}          % give the algorithm a caption
+	\label{alg:Roll1spherePos}                           % and a label for \ref{} commands later in the document
+  \begin{algorithmic}[1]
+%\SetAlgoLined
+	\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\REQUIRE rotation angles  $\alpha,\beta,\gamma \in (-\pi,\pi]$
+\IF {$\alpha < 0$}
+	\STATE $\alpha = \alpha + 2\pi$
+\ENDIF
+\IF {$\beta < 0$}
+	\STATE $\beta = \beta + 2\pi$
+\ENDIF
+\IF {$\gamma < 0$}
+	\STATE $\gamma = \gamma + 2\pi$
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+
+\begin{figure}%[htb]
+	\begin{center}
+		\begin{overpic}[width=.59\columnwidth]{EquivalentRollingPaths}\end{overpic}
+	\end{center}
+	\caption{\label{EquivalentRollingPaths} Both the red and blue paths implement the total rotation $R_x(-\frac{\pi}{4})R_y(-\frac{3\pi}{4})R_z(\frac{2\pi}{3})$.  The red path, which implements the rule \label{alg:Roll1spherePos},  is more than twice as long as the blue path, but is nonnegative.}
+\end{figure}				
+
+       % non-commutativity is a problem
+       \subsection{The problem of non-commutativity}
+ Rotation matrices do not commute, i.e. in general $R_aR_b \neq R_bR_a$.  An exception occurs when the two rotations are about the same axis, i.e. $R_x(a)R_x(b) = R_x(b)R_x(a) = R_x(a+b)$.  Non-commutativity complicates designing control sequences for ensembles of rolling spheres because the final orientation is a product of the component path segments, not (as position was for unicycles) a summation.  The matrix product $R_f(\epsilon) = \prod_{i=1}^k{R_i(\epsilon)}$ cannot, in general, be decomposed into subproblems because a change to any $R_i$ affects the entire orientation.
+ %because in general, for a path $\prod_{i=1}^k{R_i}$, a change to any $R_i$ can affect the entire orientation.
+ 
+ %Pryor presented a primitive that solved non-commutativity problem
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \section{Approximate Steering Algorithm}\label{sec:ApproxSteeringAlg}
+ %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \subsection{Decomposing a Rotation through Primitives}
+ In      \cite{Pryor2007,Pryor2007a}, Pryor and Khaneja introduced a primitive that approximates a rotation about a single axis.  This allows us to approximate the rotations $R_x(\alpha)R_y(\beta)R_x(\gamma)$ separately.
+       
+       
+       Pryor used Fourier series approximation to design the $\beta_k$ values for approximating a rotation in one direction.  Unfortunately, this method often generates  negative inputs in both axis.
+       If we define gravity to pull on spheres in the $[x,y]^T = [1,0]^T$ direction, we require  paths that never require the sphere to roll uphill.  To generate such a path, we use a Taylor series approximation about the nominal sphere size.  For the proper choice of $\phi$, this results in primitives $\beta_k$ that are  non-negative for large values of $k$.
+       
+       
+      
+\subsection{Primitives with Piecewise-Constant Inputs}
+We consider an ensemble of spheres with dynamics \eqref{eqn:EnsSphereSys}.
+%Consider the system
+%\begin{align}
+%\frac{d \,x(t,\epsilon)}{dt} &= u_1, \quad \frac{d \,y(t,r)}{dt} = u_2,\nonumber\\
+%\frac{d \,R(t,\epsilon)}{dt} &= R(t,\epsilon) \begin{bmatrix}
+%0 &0 & -u_1 \epsilon/r  \\
+%0 &0 & u_2 \epsilon/r  \\
+%u_1 \epsilon/r  &-u_2 \epsilon/r  & 0 \\
+%\end{bmatrix} 
+%\label{eqn:EnsSphereSys}
+%\end{align}
+Without loss of generality, we will assume that $x(0,\epsilon)=y(0,\epsilon)=0$ for all $\epsilon$ and also that $R(0,\epsilon)$ is the identity matrix.
+
+
+For a non-negative integer~$k$, and freely chosen~$\phi,\beta_{k} \in \R$, consider a motion primitive of the following form:
+\begin{equation}
+(u,v)
+=
+\begin{cases}
+(0,-1) & 0 \leq t < \alpha k \\
+(1,0) & \phi k   \leq t < \phi k + \beta_k/2\\
+(0,1) & \phi k +\beta_k/2  \leq t < 3\phi k + \beta_k/2\\
+(1,0) & 3\phi k  +\beta_k/2 \leq t < 3\phi k + \beta_k\\
+(0,-1) & 3\phi k   +\beta_k \leq t < 4\phi k + \beta_k\\
+\end{cases}\label{eq:PWSpherePrim}
+\end{equation}
+Such a primitive is shown in Fig.  \ref{fig:PryorsPrim1}. It is easy to show by direct calculation that the result
+is to achieve
+\begin{align*}
+\Delta x(\epsilon) &= \beta_k \\
+\Delta y(\epsilon) &= 0 \\
+\Delta R(\epsilon)  &\approx R_y(\beta_k \frac{1}{\epsilon} \cos(\phi k \frac{1}{\epsilon}))
+\end{align*}
+
+\begin{figure}%[htb]
+		\begin{center}
+			\begin{overpic}[width=.45\linewidth]{PryorsPrim1}
+			\footnotesize
+			\put(35,13){$-\phi k$}
+			\put(14,17){$\beta_k/2$}
+			\put(50,28){$2 \phi k$}
+			\put(85,31){$\beta_k/2$}
+			\put(68,35){$-\phi k$}
+			\end{overpic}\hspace{2em}
+			\begin{overpic}[width=.45\linewidth]{PryorsPrim1Subdivided}\end{overpic}
+		\end{center}
+		\caption{\label{fig:PryorsPrim1} A sample primitive of the form \eqref{eq:PWSpherePrim}, with $\beta_k = \pi/3$ and $\phi k = \pi/2$. A sphere following this path generates to first order the rotation   $\approx \beta_k \frac{1}{\epsilon}  \cos(\phi k \frac{1}{\epsilon})$.  By subdividing the rotation as illustrated on the right, we can improve arbitrarily this approximation, at the cost of a longer path.}
+\end{figure}       
+
+The approximation $R_y(\beta_k \frac{1}{\epsilon} \cos(\phi k \frac{1}{\epsilon}))$ is created by applying the motion primitive and taking the first-order Taylor series expansion at $\beta_k = 0$.  The approximation degrades for large values of $\beta_k$, as shown in Fig. \ref{fig:PryorsMatrixIdentity}.  By  repeating the primitive \eqref{eq:PWSpherePrim} $j$ times with parameter $\beta_k' = \beta_k/j$ we can achieve arbitrary accuracy in the primitive.
+Because primitives of this form all rotate in the same direction, we are free to concatenate them. 
+The result after applying $n$ primitives with $k=1,\dotsc,n$ is
+\begin{align*}
+\Delta x(\epsilon) &=  \sum_{k=1}^{n} \beta_{k}\\
+\Delta y(\epsilon) &= 0 \\
+\Delta R(\epsilon) &\approx \prod_{k=1}^{n} R_y(\beta_k \frac{1}{\epsilon} \cos(\phi k \frac{1}{\epsilon}))\\
+&\approx R_y\left(\sum_{k=1}^{n} \beta_k \frac{1}{\epsilon} \cos(\phi k \frac{1}{\epsilon})\right)
+\end{align*}
+Define $\Delta \theta(\epsilon) =  \sum_{k=1}^{n} \beta_k \frac{1}{\epsilon} \cos(\phi k \frac{1}{\epsilon})$
+
+\subsection{Achieving Error of a Particular Order}\label{sec:UnicycleErrorOfParticularOrder}
+
+For convenience, we define
+\[
+\frac{1}{\epsilon} = 1+\delta
+\]
+and restrict $\abs{\delta}<1$.
+We may express the change in $x$ and $y$ after applying $n+1$ primitives, defined above, as a Taylor's series in $\delta$ about $\delta=0$:
+\begin{align*}
+\Delta \theta(\delta) &=
+\Delta \theta(0)
++ \left( \frac{\partial \Delta \theta}{\partial \delta}\biggr\rvert_{\delta=0} \right) \delta
++ \frac{1}{2!} \left( \frac{\partial^{2} \Delta \theta}{\partial \delta^{2}}\biggr\rvert_{\delta=0} \right) \delta^{2}
++ \cdots.
+\end{align*}
+This series has the form
+\begin{align*}
+\Delta \theta(\delta) &= \sum_{j=0}^{n-1} s_{j} \delta^{j} + O\left(\delta^{n}\right).
+\end{align*}
+Note that this expression is linear in $s_{j}$, and that each coefficient $s_{j}$ is linear in $\beta_{1},\dotsc,\beta_{n}$.
+Define
+\[
+s = \begin{bmatrix} s_{0} \\ \vdots \\ s_{n-1} \end{bmatrix},
+\quad
+\beta = \begin{bmatrix} \beta_{1} \\ \vdots \\ \beta_{n} \end{bmatrix},
+\]
+so we can write
+\begin{gather}
+\label{linearequations}
+\begin{split}
+s &= S\beta
+\end{split}
+\end{gather}
+for some matrix  $S$ that does not depend explicitly on $\delta$.
+To achieve $\Delta \theta=1$ with error that is of order $n$ in $\delta$, we require only that
+\[
+s = \begin{bmatrix} 1 \\ 0 \\ \vdots \\ 0 \end{bmatrix}.
+\]
+It is immediately obvious why---as shown empirically in~\cite{Becker2010}---the achievable error decreases exponentially in the number $n+1$ of primitives used.
+We need to solve a system of $n$ linear equations to achieve $n$th-order error.
+As a consequence, exactly $n$ primitives are required to achieve $n$th-order error, for any $n$.
+There is an implicit assumption here that  $S$ is nonsingular (and, in practice, well conditioned), but this assumption will hold for ``almost all'' choices of $\phi$.
+       
+       For certain choices of $\phi$, the matrix $S$ has a very simple form.
+For example, taking $\phi=\pi/2$ and assuming $n=4$, we find that
+\[
+S =
+\begin{bmatrix}
+1 & 0 & -1 & 0 \\
+1 & -\pi/2 & -1 & 3\pi/2 \\
+0 & -\pi/2 & \pi^{2}/2 & 3\pi/2 \\
+0 & \pi^{3}/48 & \pi^{2}/16 & -27\pi^{3}/48
+\end{bmatrix}
+\]
+In this case, the linear equation~\eqref{linearequations} can be solved exactly to produce
+\[
+\beta =
+\begin{bmatrix}
+1+(2/\pi^{2}) \\
+3\left(8+3\pi^{2}\right)/\left(4\pi^{3}\right) \\
+2/\pi^{2} \\
+\left(24+\pi^{2}\right)/\left(12 \pi^{3}\right)
+\end{bmatrix}
+\]
+By linearity, it is clear that the scaled parameters $\beta \Delta \theta$  will reach arbitrary $\Delta \theta$.
+
+Note that for $\phi = \pi/2$, the primitives $\beta_k$ are nonnegative for $n \in [1,52]$.  This allows us to create motion paths that never roll uphill with zero error to order 52.
+
+
+Fig  \ref{fig:PryorsMatrixIdentity} shows an implementation of the motion plan explained in this section. We can use this method to generate paths that satisfy arbitrary accuracy bounds, but the required paths may be very long.  In the following section we use optimal control to generate shorter paths.
+
+\begin{figure}%[htb]
+		\begin{center}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity2primPath}\end{overpic}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity2primPathThresh}\end{overpic}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity2primError}\end{overpic}\\
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity3primPath}\end{overpic}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity3primPathThresh}\end{overpic}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity3primError}\end{overpic}\\
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity8primPath}\end{overpic}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity8primPathThresh}\end{overpic}
+			\begin{overpic}[width=.32\linewidth]{PryorsMatrixIdentity8primError}\end{overpic}
+		\end{center}
+		\caption{\label{fig:PryorsMatrixIdentity} A  version of the piecewise-constant path primitive \eqref{eq:PWSpherePrim}.  This primitive was introduced by Pryor \cite{Pryor2007} and has been modified to not roll uphill.  For each case $\phi = \pi/2$.   In blue is the result of implementing the primitive directly.  The approximation is poor for large rotations in the $-y$-axis, so we subdivide them if they are larger than a threshold value.  In red is the result after using a threshold on $y$ rotation of $\pi/16$.  In green is the limit as the threshold values goes to 0. Top row:  with only 2 primitives, we cannot achieve the desired rotation.  Middle row: with 3 primitives, we can achieve an error $< 1^{\circ}$ over $\epsilon \in [0.9,1.1]$.  Bottom row: increasing the number of primitives increases the required path length.  For $\epsilon \in [0.9,1.1]$ and desired error $< 1^{\circ}$, we require at least 12 primitives. }
+\end{figure}       
+       
+     
+
+
+% Using Taylor Series Approximations, we can generate all-positive inputs for n = 1 to 52 primitives
+
+       % Example  for moving ensemble from Identity to a uniform roll of \pi around y-axis without moving uphill
+       
+       
+       % Instead we line gravity along [x,y]^T = [1,1]^T, we can generate similar primitives  for both x and y rotations -- but these have low control authority
+       % All primitives shown so far result in very long paths 
+       % Another solution  numeric optimization: gradient descent
+       %
+
+
+
+%\subsection{Control with Piecewise-Constant Inputs}
+%
+%
+%%	\begin{figure}%[htb]
+%%		\begin{center}
+%%			\begin{overpic}[width=.5\columnwidth]{RotationPrims2}\end{overpic}
+%%		\end{center}
+%%	\end{figure}
+%
+%
+%
+%The following primitive generates, to first order, a pure rotation in the $\Omega_y$ direction:
+%	\begin{align*}
+%U_k  =&\left( \exp\{-k\epsilon \Omega_x\} \exp\{ \frac{1}{2}\epsilon \beta_k \Omega_y	\} 	\exp\{ k \epsilon \Omega_x\}\right)\cdot \\
+%	 &\left( \exp\{k\epsilon \Omega_x\} \exp\{ \frac{1}{2}\epsilon \beta_k \Omega_y	\} 	\exp\{-k \epsilon \Omega_x\}\right)\\
+%	 \approx&\exp\{\epsilon\beta_k \cos(k\epsilon)\Omega_y\}
+%\end{align*}
+%
+%
+%
+% By concatenating $U_k$ for $k$ from 0 to $n$ we get the net rotation
+% \[U \approx \exp\{\epsilon \sum_{k=0}^n\beta_k \cos(k\epsilon)\Omega_y\}
+% \]
+% 
+% We can choose $\beta_k$ such that $\epsilon \sum_{k=0}^n\beta_k \cos(k\epsilon) \approx \phi(\epsilon)$.
+%the result is to achieve
+%\begin{align*}
+% \Delta R_y(\epsilon) \approx&\exp\{\epsilon\beta_k \cos(k\epsilon)\Omega_y\}
+%\end{align*}
+%with freely chosen $\beta_k$.
+%
+%the result after $k+1$ primitives is
+%\begin{align*}
+%\Delta R_y(\epsilon) \approx \exp\{\epsilon \sum_{j=0}^n\beta_j \cos(j\epsilon)\Omega_y\}.
+%\end{align*}
+%
+%This can be approximated by the series expansion
+%\begin{align*}
+%\Delta R_y(\epsilon) \approx \sum_{i=0}^{k-1} \frac{1}{i!}\left(\frac{\delta^i \Delta R_x}{\delta\epsilon^i}\Bigg|_{\epsilon=1}\right)(\epsilon-1)^i
+%\end{align*}
+%
+%The result has the form
+%\begin{align*}
+%\Delta R_y(\epsilon) = \sum_{i=1}^k r_i (\epsilon-1)^{i-1} + O(\left|\epsilon-1|^k\right)
+%\end{align*}
+%where $r \in \R^k$ is linear. 
+%
+%To achieve $\Delta R_y = 1$ with error of order $k$ in $|\epsilon-1|$:
+%\begin{align*}
+%\mathbf{r} =  \begin{bmatrix}
+%1 \\
+%0 \\
+%\vdots \\
+%0
+%\end{bmatrix} 
+%\end{align*}
+% Then $\beta = R^{-1}\mathbf{r}$
+%
+%
+
+
+%\subsubsection{Shaping motion primitives}
+%The approximation is best for small $\beta_k$ values, also process noise error increases as a function of cumulative movement.
+% For $k$ motion primitives, the Taylor coefficients are an array $R_{k \times k}$.  By adding $j$ degrees of freedom to $\mathbf{r}$
+%\begin{align*}
+%	\mathbf{r} =  \begin{bmatrix}
+%	1 \\
+%	0 \\
+%	\vdots \\
+%	0 \\
+%	f_1 \\
+%	\vdots \\
+%	f_j
+%	\end{bmatrix} 
+%\end{align*}
+%We form the minimization problem
+%\begin{align*}
+% \min_{ \{f_1,\dots,f_j\} } \norm{R^{-1}\mathbf{r} }_2
+%\end{align*}
+
+
+
+
+%\subsubsection{Sphere control in 5D}
+%
+%A sphere on a plane has an $x,y$ location and an orientation in $SO(3)$, making the configuration space $\mathcal{G} = \R \times SO(3)$.  The differential system is
+%\begin{align}
+%\frac{d x_1}{dt} &= u_1, \quad \frac{d x_2}{dt} = u_2,\\
+%\frac{d R(t)}{dt} &= R(t) \begin{bmatrix}
+%0 &0 & -u_1/r \\
+%0 &0 & u_2/r\\
+%u_1/r&-u_2/r & 0 \\
+%\end{bmatrix} 
+%\label{eqn:OneSphereSys}
+%\end{align}
+%Here $R(t)$ is the rotation matrix in $SO(3)$, $u_1, u_2$ are the control functions and the sphere radius is $r$.  The problem is to minimize $\frac{1}{2}\int_0^T\left(u_1^2+u_2^2\right)dt$ over all possible solution curves of \ref{eqn:OneSphereSys} satisfying the boundary constraints $g(0) = \left(x_1^s,x_2^2,R_s\right)$ and  $g(T) = \left(x_1^g,x_2^g,R_g\right)$, $g(0),g(T) \in \mathcal{G} $.  This formulation uses the velocity of the center of the ball.  
+%
+
+
+%	\begin{figure}%[htb]
+%		\begin{center}
+%			\begin{overpic}[width=.5\columnwidth]{BicchiSketchSPhereRoller}\end{overpic}
+%			\caption{\label{fig:BicchiSketchSPhereRoller}5D sphere manipulator manufactured for Bicchi, \cite{Bicchi1995}.}
+%		\end{center}
+%	\end{figure}
+
+%To move the sphere a unit distance in the $y$ direction with no rotation (with error of order $k$), $\sum \beta = 1$	
+%\begin{align*}
+%\mathbf{r} = \left[\overbrace{0, \ldots, 0}^k, f_1, \ldots,f_n \right]^T\\
+% \min_{ \{f_1,\dots,f_j\} } \norm{R^{-1}\mathbf{r} }_2 , \quad 1 == \sum R^{-1}\mathbf{r}
+%\end{align*}
+%For $n=1$ there is one solution ($k = 4$, $f = \cot(\frac{1}{2})$).  We can then scale the $\beta$ terms to achieve any desired $y$ position with no change in orientation
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%\section{Alternate Formulation}\label{sec:AltForm}%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%
+%%%
+%%%``$\ldots$consider rolling a ball in the plane. Place a ball on a table
+%%%and try rolling it with your palm placed flat on top of it. It should feel like
+%%%there are two degrees of freedom: rolling forward and rolling side to side. The
+%%%ball should not be able to spin in place. The directions can be considered as two
+%%%action variables. The total degrees of freedom of the ball is five, however, because
+%%%it can achieve any orientation in $SO(3)$ and any $(x, y)$ position in the plane; thus,
+%%%$\mathcal{C} = \R^2 \times SO(3)$. Given that there are only two action variables, is it possible to
+%%%roll the ball into any configuration? It is shown in \cite{Li1990,Jurdjevic1993}that this is possible,
+%%%even for the more general problem of one sphere rolling on another (the plane is
+%%%a special case of a sphere with infinite radius). This problem can actually arise
+%%%in robotic manipulation when a spherical object come into contact (e.g., a robot
+%%%hand may have fingers with spherical tips); see \cite{Bicchi1995a,Marigo2000,Murray1994,Nakamura1997}.
+%%%The resulting transition equation was shown in \cite{Montana1988} (also see \cite{Murray1994}) to be
+%%%\begin{align*}
+%%%\dot{\theta} &= -u_2\\
+%%%\dot{\phi} &= \frac{u_1}{\cos \theta}\\
+%%%\dot{x} &= -u_1 \rho \sin \psi - u_2\rho \cos \psi \\
+%%%\dot{y} &= -u_1 \rho \cos \psi + u_2 \rho \sin \psi\\
+%%%\dot{\psi} &= -u_1 \tan \theta.
+%%%\end{align*}
+%%%
+%%%In these equations, $x$ and $y$ are the position on the contact point in the plane, and
+%%%$\theta$ and $\phi$ are the position of the contact point in the ball frame and are expressed
+%%%using spherical coordinates. The radius of the ball is $\rho$. Finally, $\psi$ expresses the
+%%%orientation of the ball with respect to the contact point.''  pg \#734, \emph{ S. M. LaValle: `Planning Algorithms'}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Optimal Control with Piecewise-Constant Inputs} \label{sec:OptimalControl}%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\subsection{Performance Metric}
+We consider a subset of the sphere manipulation problem relevant to manufacturing.  We want to steer an ensemble of spheres of radius $r\epsilon$ with primitives that consist of alternating rotations along the positive $x$ and $y$-axes to implement a desired rotation $R_{goal}$.  The composite rotation $R(\Theta,\epsilon)$ is 
+
+
+\begin{align} \label{eqn:posRotations}
+R(\Theta,\epsilon) &= \prod_{i = 1}^{n}{R_x\!\left(\frac{\theta_{2i-1}}{r \epsilon}\right) R_y\!\left(\frac{\theta_{2i}}{r \epsilon} \right)}\\
+\text{for }\Theta &= \left[\theta_1,\ldots,\theta_{2n}\right], \quad \theta_i \ge 0, \nonumber
+\end{align}
+where $R_x(\alpha)$ is a rotation of $\alpha$ about the $x$-axis and $R_y(\beta)$ is a rotation of $\beta$ about the $y$-axis. 
+The problem is to find $\Theta$ such that the integral
+\begin{align}
+\int_{1-\delta}^{1+\delta}\operatorname{dist}\left(R\left(\Theta,\epsilon\right)), R_{goal} \right) d\epsilon\label{eqn:minSO3}
+\end{align}
+is minimized.  Here $\operatorname{dist}\left(R_a,R_b\right)$ is a distance between two rotation matrices.  In reality $SO(3)$ is a 3 dimensional object embeddable
+in $\R^4$, and many candidate metrics exist (ours is a scaling of $\phi_5$ in Huynh, \cite{Huynh2009}).  Here we choose distance to be the angle $\phi$ rotated between $R_a$ and $R_b$ in axis-angle notation, where the transformation between $R_a$ and $R_b$ is a rotation of $\phi$ about some axis $\omega$.
+\begin{align}
+R &= R_a^{-1}R_b\nonumber \\
+ &= R_a^{T}R_b\nonumber \\
+\phi &= \arccos\left(\frac{\operatorname{trace}\left(R\right)-1}{2}\right),\quad \phi \in [0,\pi] 
+%\\ \omega = \frac{1}{2\sin(\theta)}\left[  \begin{array}{c}R_{3,2)-R_{2,3}\\ R_{1,3}-R{3,1} \\ R_{2,1}-R_{1,2}\end{array}\right]
+\end{align}
+\begin{figure}%[htb]
+	\begin{center}
+%		\begin{overpic}[width=.49\columnwidth]{SphereSimMid}\end{overpic}
+%		\begin{overpic}[width=.49\columnwidth]{SphereSimEnd}\end{overpic}
+		\begin{overpic}[width=.32\columnwidth]{ReorientSpheresRampRollensTip000050}\end{overpic}
+		\begin{overpic}[width=.32\columnwidth]{ReorientSpheresRampRollensTip000420}\end{overpic}
+		\begin{overpic}[width=.32\columnwidth]{ReorientSpheresRampRollensTip000521}\end{overpic}
+	\end{center}
+	\caption{\label{fig:9sphereSim} Nine spheres, with radius $[0.5,\ldots,1.5]$ roll down identical grooves, shown in blue.  All spheres finish with a net rotation of $\approx\pi$ about their $y$-axis.}
+\end{figure}
+Fig \ref{fig:9sphereSim} shows 9 spheres following a path specified as \eqref{eqn:minSO3} for $n = 6$.
+
+
+
+\subsection{Rotating a unit vector in $\R^3$}
+Note that it is not always necessary to enforce that the total rotation should equal $R_{goal}$.  Instead, it may be sufficient to simply rotate a unit vector in $\R^3$.   Consider an operation sequence of 
+\begin{enumerate}
+\item painting a round marker on the unmarked sphere 
+\item milling a slot a specified angular distance from the original marker
+\end{enumerate}
+  In such a case \eqref{eqn:minSO3} can be simplified to 
+\begin{align}
+\int_{1-\delta}^{1+\delta}\norm{R\left(\Theta,\epsilon\right)\cdot u_{start} - u_{goal} }\, d\epsilon
+\label{eqn:minUnit}
+\end{align}
+
+
+%\subsection{Algorithm}
+%
+%The minimization problem \eqref{eqn:minSO3} is nonconvex.  We solve an approximation to \eqref{eqn:minSO3}, by evaluating $\operatorname{dist}$ at $m$ radii evenly distributed in the range $[1-\delta,1+\delta]$.  We solve this function  numerically using a form of stochastic annealing to find a local minimum.
+%
+%
+%	\begin{table}
+%	\begin{tabular}{ l  | l || l | l | l | }
+%	  \hline                       
+%	  Problem & Goal & Possible & Algorithm & Optimal \\ \hline   \hline 
+%	  1 Sphere & $ x,y,SO(3)$ & \checkmark & \checkmark & \checkmark\cite{Jurdjevic1993}\\  \hline  
+%	Sphere Ens. &unit vector $\in \R^3$ & \checkmark& \checkmark \cite{Li2006}  & \checkmark\cite{Ruths2011}\\  \hline  
+%	Sphere Ens. &$SO(3)$ & \checkmark & \checkmark \cite{Pryor2007} & \\  \hline  
+%	Sphere Ens. & $ x,y,SO(3)$ & \checkmark & \checkmark & \\  \hline  
+%	Sphere Ens. & $\mathbf{u} \in\R^3$, $u_1,u_2 \ge 0$ & \checkmark &  & \\  \hline  
+%	Sphere Ens. & $ SO(3)$, $u_1,u_2 \ge 0$ & \checkmark &  & \\  \hline  
+%	  \hline  
+%	\end{tabular}
+%	\caption{Problems in Ensemble control of spheres.  }
+%	\end{table}
+	
+\subsection{Gradient Descent Algorithms for Optimal Control} %Based Gradient Descent Algorithms}
+Our goal is to develop motion paths that achieve a predefined rotations as a function of sphere radius.  The primitive based method in section \ref{sec:ApproxSteeringAlg} had several advantages.  It was easy to compute, the primitives for each axis rotation commuted, and the path consisted entirely of right angles making them particularly easy to manufacture.  Unfortunately the paths constructed using this technique can be very long.  In this section we apply optimal control using the same piecewise constant control to generate paths that are short.
+We optimize the path so that the cost function
+\begin{align}
+J = \sum_r  \acos{\frac{\trace{R_f(r_i) R_{d}^{-1}}-1}{2}}
+\label{eqn:Jacos} 
+\end{align}
+ is minimized.
+Here $R_f(r_i) $ is the final rotation of a sphere of radius $r_i$ after following the path and $R_d$ is the desired rotation.  $R_d$ may be a function of the sphere radius.
+
+  
+	
+Gradient descent requires the derivative of \eqref{eqn:Jacos}. The derivative of $\acos{c}$ is $\frac{-1}{\sqrt{1-c^2}}$.  We chose the $\acos{}$ distance metric because it directly represents the angular distance in radians, but there are other, simpler, metrics that provide a distance measure but are easier to take derivatives.  Note that $\acos{c}$ maps the domain $[-1,1]$ to the range $[\pi,0]$.  This mapping is a bijection that is monotonic, so we can replace $\acos{\frac{c-1}{2}}$ with the simpler relation $3-c$.
+
+\begin{align}
+J = \sum_r  3-\trace{R_f(r_i) R_{d}^{-1}}
+\label{eqn:Jtrace} 
+\end{align}
+As in \cite{Li2006b}, we assume that the path is discritized into $N$ steps over which the sphere is rolled along the vector $(u_i, v_i)$, $i\in [1,N]$.  Let
+\begin{align*}
+H_j(r_i) = \frac{u_j}{r_i}\Omega_y + \frac{v_j}{r_i}\Omega_x =
+ \begin{bmatrix}
+0 &0 & -u_j/r_i \\
+0 &0 & v_j/r_i\\
+u_j/r_i&-v_j/r_i & 0 \\
+\end{bmatrix}, 
+\end{align*}
+	where $r_i$ is uniformly spaced in $[1-\delta,1+\delta]$.  The time evolution during step $j$ is given by
+\begin{align}
+U_j(r_i) = \exp\left\{ H_j(r_i)   \right\}
+\end{align}
+The final rotation of the system is given by
+\begin{align}
+R_f = U_N(r_i) \ldots U_{j+1}(r_i) U_{j}(r_i) U_{j-1}(r_i) \ldots U_{1}(r_i) R_{0}(r_i),
+\end{align}
+where $R_{0}(r_i),$ is the initial rotation of the sphere, which may depend on the radius $r_i$.  
+Let
+\begin{align*}
+R_L(r_i) &=  U_N(r_i) U_{N-1}(r_i) \ldots U_{j+1}(r_i)\\
+R_R(r_i) &= U_{j-1}(r_i) \ldots U_{1}(r_i) R_{0}(r_i)
+\end{align*}
+
+so we have
+\begin{align*}
+J = \sum_r  3-\trace{ R_L U_{j}(r_i) R_L  R_{d}^{-1}} 
+\end{align*}
+
+For gradient descent, we will compute the gradient at each step $j\in[1,N]$ as $u_j$ and $v_j$ are perturbed.   The partial derivative of $J$ at $u_j$ is calculated by application of the chain rule.  Recall that the derivative of the exponential matrix $\exp\left\{uX\right\}$ with respect to $u$ is $X\exp\left\{uX\right\}$, thus
+\begin{align*}
+\frac{\partial{J}}{\partial{u_j}} &= \sum_r  -\trace{ R_L \frac{1}{r_i}\Omega_y U_{j}(r_i) R_L  R_{d}^{-1}}\\
+\frac{\partial{J}}{\partial{v_j}} &= \sum_r  -\trace{ R_L \frac{1}{r_i}\Omega_x U_{j}(r_i) R_L  R_{d}^{-1}}
+\end{align*}
+At a first order approximation, $J$ is decreased by $\alpha \left(\left(\frac{\partial J}{\partial u_j}\right)^2 + \left(\frac{\partial J}{\partial v_j}\right)^2 \right)$ for the perturbed control
+
+\begin{align}
+\tilde{u}_j &= u_j - \alpha\frac{\partial{J}}{\partial{u_j}} \nonumber \\ 
+\tilde{v}_j &= v_j - \alpha\frac{\partial{J}}{\partial{v_j}}. 
+\label{eq:updateuv}
+\end{align}
+
+In our algorithm, $\alpha$ is an adaptable parameter, with $\alpha_0 = 1 $ and $\beta = 1.05$.
+\begin{algorithm}                      % enter the algorithm environment
+\caption{Sphere Rolling Path Planning: Gradient Ascent}          % give the algorithm a caption
+\label{alg:gradascentSphere}                           % and a label for \ref{} commands later in the document
+\begin{algorithmic}[1]
+\STATE generate initial control guess $u_i,v_i$, for $i\in[0,k]$
+\STATE calculate initial cost $J_0$ according to \eqref{eqn:Jacos} or  \eqref{eqn:Jtrace}
+\STATE set $\beta$ to be $> 1$
+\STATE $c\leftarrow0, \alpha \leftarrow1$ 
+\WHILE{ $J_c < J_{d}$ and $\alpha > \alpha_{min}$}
+	\STATE save $(u_{p},v_{p}) \leftarrow (u,v)$
+	\FOR{ $j\in k$ }
+		\STATE calculate $\frac{\partial{J}}{\partial{u_j}},\frac{\partial{J}}{\partial{v_j}}$
+		\STATE update $(u_j,v_j)$ according to \eqref{eq:updateuv}
+	\ENDFOR
+	\STATE calculate $J_c$
+	\IF{ $J_c > J_{c-1}$}
+		\STATE restore $(u,v) \leftarrow  (u_{p},v_{p})$
+		\STATE $\alpha \leftarrow \alpha/2$
+	\ELSE
+			\STATE $\alpha \leftarrow \beta\cdot\alpha$
+	\ENDIF
+	\STATE $c \leftarrow c+1$
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+If we want the spheres to roll down a ramp by gravity alone, we must restrict the set of allowable motions.  Forcing $(u_i, v_i)$ to be in $\R^+$ ensures this, which we can accomplish by altering \eqref{eq:updateuv} to 
+\begin{align*}
+\tilde{u}_j &= \max(0,u_j - \alpha\frac{\partial{J}}{\partial{u_j}}) \\ 
+\tilde{v}_j &= \max(0,v_j - \alpha\frac{\partial{J}}{\partial{v_j}}). 
+%\label{eq:updateuvabs}
+\end{align*}
+This technique is particularly susceptible to local minima and often requires many initial conditions or simulated annealing steps (occasionally allowing $J_c > J_{c-1}$) to escape these minima.
+
+If we instead restrict primitives to the diagonal half-plane $u_j+v_j \ge 0$, we can avoid many of these local minima by replacing \eqref{eq:updateuv} with the following projection:
+\begin{algorithm}  
+\begin{algorithmic}
+\STATE $\hat{u} = u_j - \alpha\frac{\partial{J}}{\partial{u_j}} $
+\STATE$ \hat{v} = v_j - \alpha\frac{\partial{J}}{\partial{v_j}} $
+\IF { $\hat{u} +\hat{v} < 0$}
+	\STATE $\mathbf{a} = (\hat{u},\hat{v} )$
+	\STATE $\mathbf{b} = (1,-1)$
+	\STATE $\mathbf{c} = \frac{\mathbf{a} \cdot \mathbf{b}}{\mathbf{b} \cdot \mathbf{b}}\mathbf{b}$
+	\STATE $(\tilde{u}_j ,\tilde{v}_j) = \mathbf{c}$
+\ELSE
+	\STATE $ (\tilde{u}_j ,\tilde{v}_j) =  (\hat{u},\hat{v} )$   \label{eq:uvproj}
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Simulation Results}\label{sec:SimulationResults}%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ \begin{figure}[htb]
+    \begin{center}
+        \begin{overpic}[width=1\linewidth]{primitiveconstraints}
+        \end{overpic}
+    \end{center}
+    \captionsetup{singlelinecheck=off}
+    \caption[Constraints on motion commands investigated in this document.]{
+    \label{fig:primitiveconstraints.pdf}
+    Constraints on motion commands investigated in this document.  The green arrow indicates the direction of gravity. \vspace{-3mm}  \begin{itemize}\addtolength{\itemsep}{-.5\baselineskip} 
+    \item Far left: no constraints $(u,v)\in\R$.  
+    \item Left: $(u,v)$ s.t.~$u+v\ge 0$.  
+    \item Middle: $(u+v\ge 0) \cap \big( (2u+v \ge0) \cup (u+2v \ge 0)\big) \in\R^+$. 
+    \item Right, $(u,v) \in \R^+$. 
+    \item Far right: $(u,0)$ and $(0,v)$, $u,v\in \R^+$.
+    \end{itemize}
+    }
+\end{figure}
+
+
+\begin{figure}[htb]
+    \begin{center}
+    \begin{overpic}[width=.9\linewidth]{NumericalPicPathRS10per.pdf}
+        \end{overpic}
+        \begin{overpic}[width=.49\linewidth]{NumericalPicAnglRS10per.pdf}
+        \end{overpic}
+        \begin{overpic}[width=.49\linewidth]{NumericalPicJaceRS10per.pdf}
+        \end{overpic}
+    \end{center}
+    \caption{  \label{fig:NumericalPicRS10per.pdf}
+    Illustration of gradient descent procedure. The goal is a rotation by $\pi$ about the $y$-axis for a radius set of $[0.9,1.1]$. A random, 50 segment  path was generated, then optimized for 60,000 iterations of algorithm \ref{alg:gradascentSphere} for no constraints on the inputs.  The top image shows the final path, contrasted with the optimal path for $r=1$.  The bottom left plot shows the final error in degrees from the desired rotation, and the bottom right shows the evolution of the error function \eqref{eqn:Jacos}. }
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+		\begin{overpic}[width=.9\linewidth]{NumericalPicPath}\end{overpic}
+		\begin{overpic}[width=.49\linewidth]{NumericalPicAngl}\end{overpic}
+		\begin{overpic}[width=.49\linewidth]{NumericalPicAnglZOOM}\end{overpic}
+		\caption{\label{fig:NumericalPic}[Simulation results for a goal rotation by $\pi$ about the $y$-axis for a radius set of $[0.5,1.5]$] Simulation results for a goal rotation by $\pi$ about the $y$-axis for a radius set of $[0.5,1.5]$. Top: four 50 segment paths found by gradient descent for different constraints on the inputs.  Bottom: angular error in degrees for the paths shown above.  Note that for the unconstrained case, an order of magnitude longer path reduced the maximum error by a factor of 200, while the most constrained path reduced the maximum error from $180^{\circ}$ to $8^{\circ}$ while only increasing path length by a factor of 15. }
+\end{figure}
+
+\begin{figure}[htb]
+\centering
+		\begin{overpic}[width=.9\linewidth]{NumericalPicPath10per}\end{overpic}
+		\begin{overpic}[width=.49\linewidth]{NumericalPicAngl10per}\end{overpic}
+		\begin{overpic}[width=.49\linewidth]{NumericalPicAnglZOOM10per}\end{overpic}
+		\caption{\label{fig:NumericalPic10per}[Simulation results for a goal rotation by $\pi$ about the $y$-axis for a radius set of $[0.9,1.1]$] Simulation results for a goal rotation by $\pi$ about the $y$-axis for a radius set of $[0.9,1.1]$. Top: four 50 segment paths found by gradient descent for different constraints on the inputs.  Bottom: angular error in degrees for the paths shown above.  Note that for the unconstrained case, an order of magnitude longer path reduced the maximum error by a factor of 200, while the most constrained path reduced the maximum error from $180^{\circ}$ to $8^{\circ}$ while only increasing path length by a factor of 15.}
+\end{figure}
+
+In simulations, we use the gradient descent procedure \ref{alg:gradascentSphere} for the velocity constraint sets listed in Fig \ref{fig:primitiveconstraints.pdf}.
+
+Fig   \ref{fig:NumericalPicRS10per.pdf} illustrates the process.  The algorithm was initialized with a path where each segment was generated by two random numbers in $[-1.1]$.  The gradient descent procedure was run for 60,000 iterations.  Note that the error \eqref{eqn:Jacos} decreases monotonically, but at a less than exponential rate.  At the end of these iterations, the ensemble of spheres satisfies the ending constraint that the maximum error $<1^{\circ}$.
+ 
+ Larger tests for a variety of velocity constraints are shown in Figs \ref{fig:NumericalPic} and   \ref{fig:NumericalPic10per}, for $\epsilon$ ranges of $[0.5,1.5]$ and $[0.9,1.1]$, respectively.  Note that changing the $\epsilon$ range drastically scales the difficulty of the problem.   The $\pm10\%$ range reaches an error 100$\times$ less than the $\pm50\%$ range. Note as well increasingly restrictive velocity constraints increasing the difficulty of the problem.  
+
+
+
+
+%\begin{figure}
+%		\begin{overpic}[width=1\linewidth]{NumericalPicPath}\end{overpic}
+%		\caption{\label{fig:NumericalPicPath} 50 segment paths found by gradient descent for different constraints on the inputs for a desired rotation of $\pi$ about the $y$-axis and radius range $\in[0.5,1.5]$.}
+%\end{figure}
+%\begin{figure}
+%		\begin{overpic}[width=1\linewidth]{numericalAngleErr}\end{overpic}
+%		\caption{\label{fig:numericalAngleErr} Angular error for the paths shown in \ref{fig:NumericalPicPath}.  Note that for the unconstrained case, an order of magnitude longer path reduced the maximum error by a factor of 200, while the most constrained path reduced the maximum error from $180^{\circ}$ to $8^{\circ}$ while only increasing path length by a factor of 15. }
+%\end{figure}
+
+
+% \begin{figure*}[htb]
+%\centering
+%		\begin{overpic}[width=.45\linewidth]{Do25stepLogOptim13Sep2011201757Ctrl}	
+%				\end{overpic}
+%				\begin{overpic}[width=.45\linewidth]{PosDo50stepLogOptim13Sep2011201222Ctrl}	
+%				\end{overpic}\\
+%		\begin{overpic}[width=.45\linewidth]{Do25stepLogOptim13Sep2011201757Path}	
+%				\end{overpic}
+%				\begin{overpic}[width=.45\linewidth]{PosDo50stepLogOptim13Sep2011201222Path}	
+%				\end{overpic}	
+%    	
+%		\caption{Controllers and paths for two 50 segment paths found by gradient descent.  Left, unconstrained, right $u_j+v_j\ge0$ $\forall j\in[1,50]$.}
+%\label{fig:angl}
+%\end{figure*}
+%
+% \begin{figure*}[htb]
+%\centering
+%		\begin{overpic}[width=.45\linewidth]{Do25stepLogOptim13Sep2011201757Eror}	
+%				\end{overpic}
+%				\begin{overpic}[width=.45\linewidth]{PosDo50stepLogOptim13Sep2011201222Eror}	
+%				\end{overpic}\\
+%		\begin{overpic}[width=.45\linewidth]{Do25stepLogOptim13Sep2011201757Angl}	
+%				\end{overpic}
+%				\begin{overpic}[width=.45\linewidth]{PosDo50stepLogOptim13Sep2011201222Angl}	
+%				\end{overpic}		
+%		\caption{Angular Error (over time and ending) for two 50 segment paths  found by gradient descent.  Left, unconstrained, right $u+v\ge0$ $\forall j\in[1,50]$.}
+%\label{fig:angl}
+%\end{figure*}
+
+%\begin{figure}[ht]
+%    \begin{center}
+%        \begin{overpic}[width=1\linewidth]{CompJvalsDifPrims}
+%        \end{overpic}
+%    \end{center}
+%    \caption{60,000 Iterations
+%    Plot of cost function $J$ over gradient descent iterations for two 25 segment paths,  11 spheres with radius evenly distributed on $[0.5,1.5]$ with a goal rotation $R_y(\pi)$.  In blue is the cost for $(u,v)\in\R$, in red $(u,v) s.t. u+v\ge 0$ }
+%    \label{fig:CompJvalsDifPrims}
+%\end{figure}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hardware Implementation}\label{sec:hardware}%%%%%%%%%%%%
+%\section{Mechanics of Sphere Rolling}\label{sec:Mechanics}%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Our goal is to demonstrate the approximate steering techniques of \ref{sec:OptimalControl}/
+First, we investigate how well the system equations of motion \eqref{eqn:EnsSphereSys} translate into implementation.  
+
+\subsection{dynamics}
+
+Spheres rolling on ramps is a popular problem in introductory physics courses (e.g. \cite{Young2000}). % page 306, vol1
+
+%FBD
+
+The inertia $I$ of a  for a solid sphere of radius R is $I = \frac{2}{5}mr^2$.
+As shown in fig \ref{fig:InclinedPlaneBallRoll2D}, the sum of forces at the center of mass of the sphere are
+\begin{align}
+ 	\sum F_x = m g \sin(\beta) + -f = m a_{cm} \label{eqn:translation} \\
+ 	\sum\tau = fr = I_cm \alpha = \left(\frac{2}{5}mr^2\right) \alpha  \label{eqn:rotation}
+\end{align}
+If the sphere rolls without slipping, then $a_{cm} = r \alpha$ and so equation  \eqref{eqn:rotation} can be solved for the acceleration of the sphere center of mass and the required friction force to maintain rolling without slip:
+\begin{align}
+%fr = \frac{2}{5mr} \alpha\\
+a &= \frac{5}{7}g \sin(\beta)\\
+f &= \frac{2}{7}m g \sin(\beta).
+ \end{align}
+To roll without slipping, the coefficient of static friction $\mu_s$ must be greater than $2/7 \tan(\beta)$, as shown in fig \ref{fig:RequiredCoeffFriction}.  For steel on wood, this requires an angle less than $30^\circ$.
+
+
+ \begin{figure}[htb]
+\centering
+		\begin{overpic}[width=3in]{InclinedPlaneBallRoll2D}	
+		\put(55,10){$\beta$}
+		\put(25,37){\textcolor{TealBlue}{$f$}}
+		\put(41,52){\textcolor{blue}{$v_{cm}$}}
+		\put(31,42){\textcolor{Sepia}{$\eta$}}
+		\put(41,35){\textcolor{OliveGreen}{$mg$}}
+		\end{overpic}
+		\caption{Sphere rolling down an incline}
+\label{fig:InclinedPlaneBallRoll2D}
+\end{figure}
+
+ \begin{figure}[htb]
+\centering
+		\begin{overpic}[width=3in]{RequiredCoeffFriction}	\end{overpic}
+		\caption{In blue, the required coefficient of friction $\mu_s$ for rolling without slipping of a solid sphere as a function of incline angle $\beta$.  Also shown are $\mu_s$ for \textcolor{red}{teflon on steel: 0.04}, \textcolor{yellow}{steel on steel: 0.74}, \textcolor{green}{glass on glass: 0.94}, and the blue rectangle wood on steel:0.2-0.5 \cite{Young2000}.}
+\label{fig:RequiredCoeffFriction}
+\end{figure}	
+
+\subsubsection{impacts}
+Impacts between the sphere and the course dissipate energy.  The ball starts with pure potential energy, $E+s = mgh$, which is converted to potential energy $E_f = \tfrac{1}{2}mv_f^2$, or $v_f = \sqrt{2gh}$ for unimpeded rolling.  Fortunately, each impact removes energy in a predictable way.  The fraction $\frac{v_{I^-}}{v_{I^+}} = C_R$, a quantity called the coefficient of restitution that is approximately constant for all velocities.  An elastic collision has $C_R = 1$\cite{CoefficientofRestitutionWeisstein}. For wood on wood, this value is $\approx 0.6$.    The effects of impact by a rolling sphere are described in \cite{Domenech1991}.  For a more complete treatment, see \cite{Goldsmith2001}.
+	
+
+\subsection{Problem Geometry}
+To coerce the sphere to follow a desired path, we inscribe the path on a substrate and then incline the substrate to cause the sphere to roll without slipping along the path.  A sphere on a ramp of angle $\beta$ experiences acceleration $g \sin(\beta)$.  If the substrate is inclined by $\beta'$ and the path deviates $\gamma$ from straight down the ramp, the sphere experiences acceleration $g=\cos(\beta')\sin(\gamma)$, as shown in fig \ref{fig:InclinedPlaneBallRoll2D}. 
+
+ \begin{figure}[htb]
+\centering
+		\begin{overpic}[width=3in]{InclinedPlaneBallRoll}	
+		\put(14,15){$\beta'$}
+		\put(55,22){$\gamma$}
+		\end{overpic}
+		\caption{Sphere rolling at an angle $\gamma$ (due to restraining groove) down an incline of slope $\beta'$.  This is equivalent to the ball rolling down a ramp of angle $\beta =  \arcsin\left(\cos(\beta')\sin(\gamma)\right)$.}
+\label{fig:InclinedPlaneBallRoll2D}
+\end{figure}
+
+Paths may be inscribed in a variety of ways.  From a machining perspective, cutting a continuous groove can be accomplished by moving an end mill cutting tool centered on the desired path. Fig  \ref{fig:RadiusSizePicSqVs90} shows a cross-section view of grooves cut by 90 degree end mill and a square-end end mill, forming 90 degree and square-profile grooves .  Note that each  groove type causes the sphere to have a \emph{effective radius} less than the true radius.  For a 90 degree groove, the effective radius $r = \frac{r'}{\sqrt{2}}$ and for a square groove of width $w$, $r=\sqrt{(r')^2-w^2} .$ 
+   This means that paths designed for a sphere rolling on a plane must be scaled by a factor of $1/\sqrt{2}$ when the path is cut into a 90 degree profile groove.
+
+   Note also (fig \ref{fig:RadiusSizePicSqVs90}) that spheres require kinetic energy to escape the potential well of the groove.  90 degree grooves can be more stable than square profile grooves because the sphere can be fully submerged in the potential well, while square grooves must have less than half of the ball submerged.  
+   
+
+
+ \begin{figure}[htb]
+\centering
+		\begin{overpic}[width=3in]{RadiusSizePicSqVs90}	
+		\put(21,9){$w$}
+		\put(41,9){$w$}
+		\put(62,9){$w$}
+		\put(59,24){$r$}
+		\put(65,22){$r_e$}
+		\put(59,63){$r$}
+		\put(65,61){$r_e$}
+		\end{overpic}\\
+		\vspace{0.2in}
+		\begin{overpic}[width=3in]{RadiusSizeGraphSqVs90}	\end{overpic}
+		\caption{Comparing using a square profile groove and a 90 degree groove.  The effective radius $r_e$ of the spheres are plotted in red for a 90 degree groove and in blue for the square groove of width $w=1/2$.  Note that the potential well for a 90 degree groove may be made arbitrarily large by cutting the groove deeper, but the well for a square groove must be less than the smallest ball diameter, $2r(1-\delta)$.}
+\label{fig:RadiusSizePicSqVs90}
+\end{figure}
+\subsection{rotation about an arbitrary axis}
+
+
+
+\begin{figure}%[htb]
+	\begin{center} %source svg: ballRolling.svg
+		\begin{overpic}[width=1\columnwidth]{grooveProfilesZturn}
+		 \footnotesize
+		\put(40,20){$\Omega_x\cos \phi$}
+		\put(20,25){$\Omega_x \sin \phi$}
+		\put(22,10){$\phi$}
+		\put(59,20){$\Omega_x$}
+		\put(77,20){$\Omega_x \cos \phi$}
+		\put(73,25){$-\Omega_x \sin \phi$}
+		\put(77,10){$-\phi$}
+		\end{overpic}
+	\end{center}
+	\caption{  \label{fig:grooveProfilesZturn}   By varying the miter of the groove cut into the plane, we can generate velocity about the $z$-axis.  in the sketch above, if the center, symmetric groove generates $\exp{\left\{\Omega_x\right\}}$, then the left groove, which is tilted by $\phi$ generates the rotation $\exp\left\{\cos(\phi)\Omega_x + \sin(\phi)\Omega_z\right\}$ and the right groove $\exp\left\{\cos(\phi)\Omega_x - \sin(\phi)\Omega_z\right\}$. To prevent the ball from rolling out of the groove, $\phi$ is limited to $\pm \frac{\pi}{6}$.    Now the total range of rotation inputs, where $\psi$ is the angle from $x$ along the groove, is  $\exp \left\{ \cos(\phi)  \left( \cos(\psi)\Omega_x + \sin(\psi)\Omega_y \right) + \sin(\phi) \Omega_z \right\} .$  Sadly, the path of the centroid of the ball is no longer uniform as a function of $\epsilon$.  This causes spheres of differing sizes follow different paths, complicating analysis.
+ }
+\end{figure}
+
+%\subsubsection{rotation about an arbitrary axis}
+
+Rotate $\theta$  about the unit vector  $\mathbf{u} = \{u_x,u_y,u_z\}$, $\left(u_x^2+u_y^2+u_z^2=1\right)$ is
+\[\scriptsize
+ \left[
+\begin{array}{ccc}
+ c_\theta+u_x^2(1-c_\theta) & u_x u_y(1- c_\theta )- u_z s_\theta & u_x u_z (1-c_\theta) + u_y s_\theta \\
+ u_y u_x (1-c_\theta)+u_z s_\theta & c_\theta+u_y^2(1-c_\theta) & u_y u_z (1-c_\theta)-u_x s_\theta \\
+ u_z u_x (1-c_\theta)-u_y s_\theta & u_z u_y (1-c_\theta)+u_x s_\theta & c_\theta+u_z^2(1-c_\theta)
+\end{array}
+\right]
+\]
+
+%\[
+% \left[
+%\begin{array}{ccc}
+% \cos(\theta)+u_x^2(1-\cos(\theta)) & u_x u_y(1- \cos(\theta) )- u_z \sin(\theta) & u_x u_z (1-\cos(\theta)) + u_y \sin(\theta) \\
+% u_y u_x (1-\cos(\theta))+u_z \sin(\theta) & \cos(\theta)+u_y^2(1-\cos(\theta)) & u_y u_z (1-\cos(\theta))-u_x \sin(\theta) \\
+% u_z u_x (1-\cos(\theta))-u_y \sin(\theta) & u_z u_y (1-\cos(\theta))+u_x \sin(\theta) & \cos(\theta)+u_z^2(1-\cos(\theta))
+%\end{array}
+%\right]
+%\]
+Rolling without slipping requires that the rotations take place atop the plane.  For rolling on the plane $u_z = 0$ and so $u_y = \sqrt{1-u_x^2}$, and a rotation of $\theta$ about the axis $\{u_x,u_y,0\}$ is
+
+\[\left[
+\begin{array}{ccc}
+ c_\theta+(1-c_\theta) u_x^2 & (1-c_\theta) u_x u_y & s_\theta u_y \\ 
+ (1-c_\theta) u_x u_y & 1-(1-c_\theta) u_x^2 & -s_\theta u_x \\
+ -s_\theta u_y & s_\theta u_x & c_\theta 
+\end{array}
+\right].\]
+
+%\[\left[
+%\begin{array}{ccc}
+% \cos(\theta)-(-1+\cos(\theta)) u_x^2 & -(-1+\cos(\theta)) u_x \sqrt{1-u_x^2} & \sin(\theta) \sqrt{1-u_x^2} \\
+% -(-1+\cos(\theta)) u_x \sqrt{1-u_x^2} & 1+(-1+\cos(\theta)) u_x^2 & -\sin(\theta) u_x \\
+% -\sin(\theta) \sqrt{1-u_x^2} & \sin(\theta) u_x & \cos(\theta)
+%\end{array}
+%\right]\]
+
+This simplifies for rotations of $\theta$ about the $y$ axis to
+\[\left[
+\begin{array}{ccc}
+ 1 & 0 & 0 \\
+ 0 & \cos(\theta) & -\sin(\theta) \\
+ 0 & \sin(\theta) & \cos(\theta)
+\end{array}
+\right]\]
+
+and around the $x$-axis to \[\left[
+\begin{array}{ccc}
+ \cos(\theta) & 0 & \sin(\theta) \\
+ 0 & 1 & 0 \\
+ -\sin(\theta) & 0 & \cos(\theta)
+\end{array}.
+\right]\]
+
+
+       
+       

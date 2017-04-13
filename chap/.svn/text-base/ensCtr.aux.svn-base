@@ -1,0 +1,109 @@
+\relax 
+\citation{Laumond1987}
+\citation{Brockett1993}
+\@writefile{toc}{\contentsline {chapter}{Chapter\ 1\hskip 1em\relax Ensemble Control}{1}{chapter.1}}
+\@writefile{lof}{\addvspace {10\p@ }}
+\@writefile{lot}{\addvspace {10\p@ }}
+\newlabel{chap-ensCtr}{{1}{1}{Ensemble Control\relax }{chapter.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.1}{\ignorespaces  Two classical robotic systems. On the left, a nonholonomic unicycle, a canonical model for robot motion planning. On the right, a plate-ball manipulator, a canonical model for robotic manipulation. This dissertation answers the question, ``Are these systems still controllable under model perturbation that scales all the inputs by an unknown but bounded constant?''\relax }}{1}{figure.caption.5}}
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:TwoClassicalRoboticSystems}{{1.1}{1}{\label {fig:TwoClassicalRoboticSystems} Two classical robotic systems. On the left, a nonholonomic unicycle, a canonical model for robot motion planning. On the right, a plate-ball manipulator, a canonical model for robotic manipulation. This dissertation answers the question, ``Are these systems still controllable under model perturbation that scales all the inputs by an unknown but bounded constant?''\relax \relax }{figure.caption.5}{}}
+\citation{Brockett1999,Khaneja2000,Li2006,Li2006b,Li2006a,Li2007,Li2009,Li2011,Ruths2011,Ruths2011a,Beauchard2010,Beauchard2010a}
+\newlabel{fig:UniUnknownWheelSize}{{1.2a}{2}{Subfigure 1 1.2a\relax }{subfigure.1.2.1}{}}
+\newlabel{sub@fig:UniUnknownWheelSize}{{(a)}{a}{Subfigure 1 1.2a\relax }{subfigure.1.2.1}{}}
+\newlabel{fig:BallsUnknownRadii}{{1.2b}{2}{Subfigure 1 1.2b\relax }{subfigure.1.2.2}{}}
+\newlabel{sub@fig:BallsUnknownRadii}{{(b)}{b}{Subfigure 1 1.2b\relax }{subfigure.1.2.2}{}}
+\newlabel{fig:ManyDiffDrive}{{1.2c}{2}{Subfigure 1 1.2c\relax }{subfigure.1.2.3}{}}
+\newlabel{sub@fig:ManyDiffDrive}{{(c)}{c}{Subfigure 1 1.2c\relax }{subfigure.1.2.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.2}{\ignorespaces  In this dissertation we apply the framework of ensemble control theory to control the three robotic systems shown above.\relax }}{2}{figure.caption.6}}
+\newlabel{fig:threeMotivationalProblems}{{1.2}{2}{\label {fig:threeMotivationalProblems} In this dissertation we apply the framework of ensemble control theory to control the three robotic systems shown above.\relax \relax }{figure.caption.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.3}{\ignorespaces  Piecewise constant input trajectories applied to a unicycle with unknown wheel radius. Top: a nominal controller results in a wide range of possible ending positions of the unicycle as a function of wheel size. Bottom: our controller brings all possible ending positions arbitrarily close to the desired goal position. Goal and start positions are drawn in green. The input trajectory for each controller is shown above the plots. Representative unicycles are drawn using black discs and a blue orientation marker. Red lines show state trajectories.   \href  {http://www.youtube.com/watch?v=_v4KUBfzbv0}{(Video online: http://www.youtube.com/watch?v=\_v4KUBfzbv0)} \relax }}{3}{figure.caption.7}}
+\newlabel{fig:IntroUniPaths}{{1.3}{3}{\label {fig:IntroUniPaths} Piecewise constant input trajectories applied to a unicycle with unknown wheel radius. Top: a nominal controller results in a wide range of possible ending positions of the unicycle as a function of wheel size. Bottom: our controller brings all possible ending positions arbitrarily close to the desired goal position. Goal and start positions are drawn in green. The input trajectory for each controller is shown above the plots. Representative unicycles are drawn using black discs and a blue orientation marker. Red lines show state trajectories. \\ \href {http://www.youtube.com/watch?v=_v4KUBfzbv0}{(Video online: http://www.youtube.com/watch?v=\_v4KUBfzbv0)} \relax \relax }{figure.caption.7}{}}
+\citation{Beauchard2010}
+\@writefile{toc}{\contentsline {section}{\numberline {1.1}Framework of Ensemble Control Theory}{4}{section.1.1}}
+\newlabel{Framework of Ensemble Control Theory}{{1.1}{4}{Framework of Ensemble Control Theory\relax }{section.1.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1.1}A Case Study: An Ensemble of Unicycles}{4}{subsection.1.1.1}}
+\newlabel{eq:oneIntro}{{1.1}{4}{A Case Study: An Ensemble of Unicycles\relax }{equation.1.1.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1.4}{\ignorespaces  A differential-drive robot is a nonholonomic unicycle. This system has parameter perturbation that scales the wheel radius by an unknown, bounded constant $\epsilon $. The state is $(x,y,\theta )$ with inputs $u_1(t)$ and $u_2(t)$. \relax }}{5}{figure.caption.8}}
+\newlabel{fig:UnicycleWheelRadEnsContIntro}{{1.4}{5}{\label {fig:UnicycleWheelRadEnsContIntro} A differential-drive robot is a nonholonomic unicycle. This system has parameter perturbation that scales the wheel radius by an unknown, bounded constant $\epsilon $. The state is $(x,y,\theta )$ with inputs $u_1(t)$ and $u_2(t)$. \relax \relax }{figure.caption.8}{}}
+\newlabel{eq:oneIntrouncertain}{{1.2}{5}{A Case Study: An Ensemble of Unicycles\relax }{equation.1.1.2}{}}
+\citation{Brockett1999,Khaneja2000,Li2006,Li2006b,Li2006a,Li2007,Li2009,Li2011}
+\citation{Murray1994}
+\newlabel{eq:ensembleINTRO}{{1.3}{6}{A Case Study: An Ensemble of Unicycles\relax }{equation.1.1.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1.2}A Brief History of Ensemble Control Theory}{6}{subsection.1.1.2}}
+\citation{Li2009}
+\citation{Li2009}
+\citation{Meer1993}
+\citation{Brockett1999,Khaneja2000,Li2006,Li2006b,Li2006a,Li2007,Li2009,Li2011}
+\citation{Michael2008}
+\citation{Odhner2010}
+\citation{Rouchon2001}
+\citation{Beauchard2010}
+\citation{Siciliano2009}
+\citation{Lucibello2001}
+\citation{Thrun2005,Siegwart2011}
+\citation{Borenstein1995}
+\citation{Antonelli2007}
+\citation{Martinelli2007}
+\citation{Date2004,Das2004,Morin2008,Casagrande2009}
+\citation{Oriolo2003,Oriolo2005}
+\@writefile{toc}{\contentsline {section}{\numberline {1.2}Alternative Frameworks to Ensemble Control Theory}{8}{section.1.2}}
+\citation{Dullerud2000}
+\citation{Singer1990}
+\citation{Fischer1993}
+\citation{Li2009a}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.1}Robust Control}{9}{subsection.1.2.1}}
+\citation{Mason2001,Thrun2005,LaValle2006}
+\citation{Erdmann:1986}
+\citation{Alterovitz2008}
+\citation{Erdmann1988}
+\citation{Goldberg1993,Canny1994}
+\citation{Lynch2002,Murphey2005}
+\citation{Goemans2006,Vose2008a}
+\citation{Goldberg1993,Akella2000,Stappen2002}
+\citation{Goldberg1999,Moll2002}
+\citation{Akella1999,Murphey2004a}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.2}Motion Planning under Uncertainty}{10}{subsection.1.2.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {1.3}Applications of Ensemble Control to Robotics}{10}{section.1.3}}
+\@setckpt{chap/ensCtr}{
+\setcounter{page}{12}
+\setcounter{equation}{3}
+\setcounter{enumi}{0}
+\setcounter{enumii}{0}
+\setcounter{enumiii}{0}
+\setcounter{enumiv}{0}
+\setcounter{footnote}{0}
+\setcounter{mpfootnote}{0}
+\setcounter{part}{0}
+\setcounter{chapter}{1}
+\setcounter{section}{3}
+\setcounter{subsection}{0}
+\setcounter{subsubsection}{0}
+\setcounter{paragraph}{0}
+\setcounter{subparagraph}{0}
+\setcounter{figure}{4}
+\setcounter{table}{0}
+\setcounter{parentequation}{0}
+\setcounter{KVtest}{1}
+\setcounter{subfigure}{0}
+\setcounter{subfigure@save}{3}
+\setcounter{lofdepth}{1}
+\setcounter{subtable}{0}
+\setcounter{subtable@save}{0}
+\setcounter{lotdepth}{1}
+\setcounter{ALG@line}{0}
+\setcounter{ALG@rem}{0}
+\setcounter{ALG@nested}{0}
+\setcounter{ALG@Lnr}{2}
+\setcounter{ALG@blocknr}{10}
+\setcounter{ALG@storecount}{0}
+\setcounter{ALG@tmpcounter}{0}
+\setcounter{float@type}{8}
+\setcounter{algorithm}{0}
+\setcounter{r@tfl@t}{0}
+\setcounter{theorem}{1}
+\setcounter{ContinuedFloat}{0}
+\setcounter{Item}{0}
+\setcounter{Hfootnote}{0}
+\setcounter{section@level}{1}
+}
